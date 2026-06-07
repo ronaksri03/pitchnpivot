@@ -84,7 +84,7 @@ export default function ProfilePage() {
       )}
 
       {/* Skills */}
-      {profile?.skills?.length > 0 && (
+      {(profile?.skills?.length ?? 0) > 0 && (
         <Section title="Skills">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {profile.skills.map(s => <span key={s} className="vtag">{s}</span>)}
