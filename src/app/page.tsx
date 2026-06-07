@@ -71,6 +71,51 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 4-box quick nav */}
+      <section style={{ padding: '0 24px 40px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <Link href="/discover" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🔍</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>Discover Talent</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Browse builders by skill</div>
+            </div>
+          </Link>
+
+          <Link href="/lab" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🧪</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>Project Lab</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Open projects & collabs</div>
+            </div>
+          </Link>
+
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🧑‍💻</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>I&apos;m an Individual</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Post reels & get discovered</div>
+            </div>
+          </Link>
+
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>👔</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>I&apos;m a Manager</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Post projects & hire talent</div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* Communities */}
       <section style={{ padding: '0 24px 80px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
         <div style={{
@@ -103,55 +148,6 @@ export default function HomePage() {
               </span>
             </Link>
           ))}
-        </div>
-      </section>
-
-      {/* Role CTAs */}
-      <section style={{ padding: '0 24px 80px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {/* Individual */}
-          <Link href="/auth" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '16px',
-              padding: '28px', cursor: 'pointer', transition: 'border-color 0.2s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '12px' }}>🧑‍💻</div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: '#f0ece4', marginBottom: '8px' }}>
-                I&apos;m an Individual
-              </div>
-              <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
-                Post reels, showcase projects, and get discovered by companies looking for real talent.
-              </div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00' }}>
-                Create your profile →
-              </div>
-            </div>
-          </Link>
-
-          {/* Manager */}
-          <Link href="/auth" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '16px',
-              padding: '28px', cursor: 'pointer', transition: 'border-color 0.2s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '12px' }}>👔</div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: '#f0ece4', marginBottom: '8px' }}>
-                I&apos;m a Manager / Company
-              </div>
-              <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
-                Post projects, discover builders by skill, and assign work directly — no middlemen.
-              </div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00' }}>
-                Post a project →
-              </div>
-            </div>
-          </Link>
         </div>
       </section>
 
