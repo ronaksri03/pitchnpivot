@@ -14,6 +14,14 @@ export interface Profile {
   github_url: string | null
   portfolio_url: string | null
   linkedin_url: string | null
+  pronouns: string | null
+  website_url: string | null
+  twitter_url: string | null
+  discord_handle: string | null
+  hourly_rate: string | null
+  college: string | null
+  timezone: string | null
+  looking_for: string | null
   created_at: string
 }
 

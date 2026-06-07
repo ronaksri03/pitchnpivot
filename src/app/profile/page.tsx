@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { Profile, Reel, IndividualProject, ManagerProject, ProfileView } from '@/types'
+import EditProfileModal from '@/components/EditProfileModal'
 
 function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const [assigned, setAssigned] = useState<ManagerProject[]>([])
   const [visits, setVisits] = useState<ProfileView[]>([])
   const [loading, setLoading] = useState(true)
+  const [showEdit, setShowEdit] = useState(false)
   const sb = getClient()
 
   useEffect(() => {
@@ -59,73 +61,102 @@ export default function ProfilePage() {
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: '32px 24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
         <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#c8ff00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: 700, color: '#0a0a0a', flexShrink: 0 }}>
           {initials(name)}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#f0ece4' }}>{name}</div>
-          {profile?.job_title && <div style={{ fontSize: '14px', color: '#888', marginTop: '2px' }}>{profile.job_title}{profile.years_exp ? ` · ${profile.years_exp} yrs` : ''}{profile.location ? ` · 📍 ${profile.location}` : ''}</div>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#f0ece4' }}>{name}</div>
+            {profile?.pronouns && <span style={{ fontSize: '12px', color: '#555' }}>({profile.pronouns})</span>}
+          </div>
+          {profile?.job_title && (
+            <div style={{ fontSize: '14px', color: '#888', marginTop: '2px' }}>
+              {profile.job_title}
+              {profile.years_exp ? ` · ${profile.years_exp} yrs` : ''}
+              {profile.location ? ` · 📍 ${profile.location}` : ''}
+              {profile.timezone ? ` · 🕐 ${profile.timezone}` : ''}
+            </div>
+          )}
+          {profile?.college && <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>🎓 {profile.college}</div>}
           {profile?.username && <div style={{ fontSize: '13px', color: '#444', marginTop: '2px' }}>@{profile.username}</div>}
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px', background: profile?.open_to_work ? 'rgba(200,255,0,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${profile?.open_to_work ? 'rgba(200,255,0,0.3)' : '#2a2a2a'}`, color: profile?.open_to_work ? '#c8ff00' : '#555' }}>
             {profile?.open_to_work ? '✦ Open to Work' : '◉ Not looking'}
           </span>
+          <button className="btn-primary" onClick={() => setShowEdit(true)} style={{ fontSize: '12px', padding: '6px 14px' }}>
+            ✏ Edit
+          </button>
         </div>
       </div>
 
-      {/* Bio */}
       {profile?.bio && (
         <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px 18px', marginBottom: '24px', fontSize: '14px', color: '#999', lineHeight: 1.65, borderLeft: '2px solid #c8ff00' }}>
           {profile.bio}
         </div>
       )}
 
-      {/* Skills */}
-      {(profile?.skills?.length ?? 0) > 0 && (
-        <Section title="Skills">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {profile.skills.map(s => <span key={s} className="vtag">{s}</span>)}
+      {profile?.looking_for && (
+        <div style={{ background: 'rgba(200,255,0,0.04)', border: '1px solid rgba(200,255,0,0.15)', borderRadius: '12px', padding: '14px 18px', marginBottom: '24px', fontSize: '13px', color: '#888', lineHeight: 1.6 }}>
+          <span style={{ color: '#c8ff00', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Looking for · </span>
+          {profile.looking_for}
+        </div>
+      )}
+
+      {profile && (profile.work_pref || profile.availability || profile.hourly_rate || profile.github_url || profile.portfolio_url || profile.website_url || profile.linkedin_url || profile.twitter_url || profile.discord_handle) && (
+        <Section title="Details">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+            {profile.work_pref && <InfoChip icon="🏠" label={profile.work_pref} />}
+            {profile.availability && <InfoChip icon="📅" label={profile.availability} />}
+            {profile.hourly_rate && <InfoChip icon="💰" label={profile.hourly_rate} />}
+            {profile.github_url && <LinkChip icon="🐙" label="GitHub" url={profile.github_url} />}
+            {profile.portfolio_url && <LinkChip icon="🎨" label="Portfolio" url={profile.portfolio_url} />}
+            {profile.website_url && <LinkChip icon="🌐" label="Website" url={profile.website_url} />}
+            {profile.linkedin_url && <LinkChip icon="💼" label="LinkedIn" url={profile.linkedin_url} />}
+            {profile.twitter_url && <LinkChip icon="𝕏" label="Twitter/X" url={profile.twitter_url} />}
+            {profile.discord_handle && <InfoChip icon="💬" label={profile.discord_handle} />}
           </div>
         </Section>
       )}
 
-      {/* Manager visits */}
-      <Section title={`👔 Managers who visited your profile (${visits.length})`}>
+      {(profile?.skills?.length ?? 0) > 0 && (
+        <Section title="Skills">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {profile!.skills.map(s => <span key={s} className="vtag">{s}</span>)}
+          </div>
+        </Section>
+      )}
+
+      <Section title={`👔 Managers who visited (${visits.length})`}>
         {visits.length === 0 ? (
           <div style={{ color: '#444', fontSize: '13px' }}>No visits yet.</div>
         ) : visits.map((v, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid #111' }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👔</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0ece4' }}>{(v as unknown as { managers?: { name?: string; company?: string } }).managers?.name || 'A manager'}</div>
-              <div style={{ fontSize: '12px', color: '#555' }}>{(v as unknown as { managers?: { name?: string; company?: string } }).managers?.company || ''}</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0ece4' }}>{(v as any).managers?.name || 'A manager'}</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>{(v as any).managers?.company || ''}</div>
             </div>
             <div style={{ fontSize: '11px', color: '#444' }}>{v.viewed_at ? timeAgo(v.viewed_at) : ''}</div>
           </div>
         ))}
       </Section>
 
-      {/* Assigned projects */}
       {assigned.length > 0 && (
         <Section title="📋 Projects assigned to me">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: '10px' }}>
             {assigned.map(p => (
-              <div key={p.id} style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', minHeight: '100px' }}>
-                <div style={{ fontWeight: 700, fontSize: '13px', color: '#f0ece4', lineHeight: 1.3 }}>{p.title}</div>
-                {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name && <div style={{ fontSize: '11px', color: '#666' }}>{(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name}</div>}
-                <div style={{ marginTop: 'auto' }}>
-                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00' }}>{p.pay_type}</span>
-                </div>
+              <div key={p.id} style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontWeight: 700, fontSize: '13px', color: '#f0ece4' }}>{p.title}</div>
+                {(p as any).managers?.name && <div style={{ fontSize: '11px', color: '#666' }}>{(p as any).managers.name}</div>}
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00', alignSelf: 'flex-start' }}>{p.pay_type}</span>
               </div>
             ))}
           </div>
         </Section>
       )}
 
-      {/* Reels */}
       <Section title={`▶ Reels (${reels.length})`}>
         {reels.length === 0 ? <div style={{ color: '#444', fontSize: '13px' }}>No reels yet.</div> : reels.map(r => (
           <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '12px 14px', color: '#f0ece4', textDecoration: 'none', marginBottom: '8px' }}>
@@ -138,9 +169,8 @@ export default function ProfilePage() {
         ))}
       </Section>
 
-      {/* Projects */}
       <Section title={`🗂 My Projects (${projects.length})`}>
-        {projects.length === 0 ? <div style={{ color: '#444', fontSize: '13px' }}>No projects posted yet.</div> : (
+        {projects.length === 0 ? <div style={{ color: '#444', fontSize: '13px' }}>No projects yet.</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '10px' }}>
             {projects.map(p => (
               <div key={p.id} style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -155,6 +185,10 @@ export default function ProfilePage() {
           </div>
         )}
       </Section>
+
+      {showEdit && profile && (
+        <EditProfileModal profile={profile} onClose={() => setShowEdit(false)} onSaved={(p) => setProfile(p)} />
+      )}
     </div>
   )
 }
@@ -167,5 +201,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </div>
       {children}
     </div>
+  )
+}
+
+function InfoChip({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #1e1e1e', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#888' }}>
+      <span>{icon}</span><span>{label}</span>
+    </div>
+  )
+}
+
+function LinkChip({ icon, label, url }: { icon: string; label: string; url: string }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#111', border: '1px solid #1e1e1e', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>
+      <span>{icon}</span><span>{label}</span>
+    </a>
   )
 }
