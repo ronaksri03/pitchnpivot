@@ -106,6 +106,55 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Role CTAs */}
+      <section style={{ padding: '0 24px 80px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {/* Individual */}
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '16px',
+              padding: '28px', cursor: 'pointer', transition: 'border-color 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
+            >
+              <div style={{ fontSize: '28px', marginBottom: '12px' }}>🧑‍💻</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: '#f0ece4', marginBottom: '8px' }}>
+                I&apos;m an Individual
+              </div>
+              <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
+                Post reels, showcase projects, and get discovered by companies looking for real talent.
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00' }}>
+                Create your profile →
+              </div>
+            </div>
+          </Link>
+
+          {/* Manager */}
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '16px',
+              padding: '28px', cursor: 'pointer', transition: 'border-color 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
+            >
+              <div style={{ fontSize: '28px', marginBottom: '12px' }}>👔</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: '#f0ece4', marginBottom: '8px' }}>
+                I&apos;m a Manager / Company
+              </div>
+              <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
+                Post projects, discover builders by skill, and assign work directly — no middlemen.
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00' }}>
+                Post a project →
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer style={{
         marginTop: 'auto', padding: '24px',
