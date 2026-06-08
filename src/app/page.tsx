@@ -12,7 +12,6 @@ export default function HomePage() {
   const { user, accountType, loading } = useAuth()
   const router = useRouter()
 
-  // Auto-route returning users
   useEffect(() => {
     if (!loading && user) {
       if (accountType === 'manager') router.replace('/dashboard')
@@ -73,4 +72,92 @@ export default function HomePage() {
 
       {/* 4-box quick nav */}
       <section style={{ padding: '0 24px 40px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'r
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <Link href="/discover" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🔍</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>Discover Talent</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Browse builders by skill</div>
+            </div>
+          </Link>
+
+          <Link href="/lab" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🧪</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>Project Lab</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Open projects & collabs</div>
+            </div>
+          </Link>
+
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>🧑‍💻</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>I&apos;m an Individual</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Post reels & get discovered</div>
+            </div>
+          </Link>
+
+          <Link href="/auth" style={{ textDecoration: 'none' }}>
+            <div style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#c8ff00')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}>
+              <div style={{ fontSize: '22px', marginBottom: '8px' }}>👔</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>I&apos;m a Manager</div>
+              <div style={{ fontSize: '12px', color: '#555' }}>Post projects & hire talent</div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* Communities */}
+      <section style={{ padding: '0 24px 80px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+        <div style={{
+          fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: '#444', marginBottom: '16px',
+        }}>
+          Communities
+        </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gap: '10px',
+        }}>
+          {COMMUNITIES.map(tag => (
+            <Link
+              key={tag}
+              href={`/discover?community=${encodeURIComponent(tag)}`}
+              style={{
+                background: '#0f0f0f', border: '1px solid #1e1e1e',
+                borderRadius: '12px', padding: '16px',
+                textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: '8px',
+                transition: 'border-color 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
+            >
+              <span style={{ fontSize: '24px' }}>{COMMUNITY_EMOJI[tag]}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#f0ece4' }}>
+                {COMMUNITY_NAMES[tag]}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{
+        marginTop: 'auto', padding: '24px',
+        borderTop: '1px solid #111', textAlign: 'center',
+        fontSize: '12px', color: '#333',
+      }}>
+        pitchNpivot © 2025 · Built for builders
+      </footer>
+    </div>
+  )
+}
