@@ -43,15 +43,22 @@ export default function ProfileModal({ profileId, onClose }: Props) {
       setProjects(projRes.data || [])
       setLoading(false)
 
-      // Log profile view if manager
+      // Log profile view — check both metadata and managers table
       const { data: { user } } = await sb.auth.getUser()
-      if (user && user.user_metadata?.account_type === 'manager') {
-        const { error: viewErr } = await sb.from('profile_views').insert({
-          profile_user_id: profileId,
-          manager_id: user.id,
-          viewed_at: new Date().toISOString(),
-        })
-        if (viewErr) console.error('[profile_views insert]', viewErr.message, viewErr.code)
+      if (user) {
+        const isManagerByMeta = user.user_metadata?.account_type === 'manager'
+        const { data: managerRow } = await sb.from('managers').select('id').eq('id', user.id).maybeSingle()
+        const isManager = isManagerByMeta || !!managerRow
+        console.log('[profile_views] user:', user.id, 'isManager:', isManager, 'meta:', user.user_metadata?.account_type)
+        if (isManager) {
+          const { error: viewErr } = await sb.from('profile_views').insert({
+            profile_user_id: profileId,
+            manager_id: user.id,
+            viewed_at: new Date().toISOString(),
+          })
+          if (viewErr) console.error('[profile_views insert error]', viewErr.message, viewErr.code, viewErr.details)
+          else console.log('[profile_views] view recorded successfully')
+        }
       }
     }
     load()
