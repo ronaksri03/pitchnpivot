@@ -101,7 +101,7 @@ export default function ProfileModal({ profileId, onClose }: Props) {
                     {myProjects.map(proj => (
                       <button key={proj.id} disabled={assigningId === proj.id} onClick={async () => {
                         setAssigningId(proj.id)
-                        await sb.from('manager_projects').update({ assigned_to: profileId, visibility: 'private' }).eq('id', proj.id)
+                        await sb.from('manager_projects').update({ assigned_to: profileId, visibility: 'private', status: 'draft' }).eq('id', proj.id)
                         setAssignDone(true)
                         setTimeout(() => { setShowAssign(false); setAssignDone(false); setAssigningId(null) }, 1500)
                       }} style={{ padding: '7px 10px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', textAlign: 'left', fontWeight: 500 }}>

@@ -79,24 +79,17 @@ export default function DashboardPage() {
 
     let assigneeId: string | null = null
     if (visibility === 'private' && assignee.trim()) {
-      // Search by username or email
-      const term = assignee.trim()
-      let { data: ap } = await sb.from('profiles').select('id').eq('username', term).maybeSingle()
-      if (!ap) {
-        // Try email via auth — look up by email in profiles join
-        const { data: byEmail } = await sb.from('profiles').select('id, username').limit(100)
-        // We can't query auth.users directly, so match on username containing the email prefix
-        const emailPrefix = term.includes('@') ? term.split('@')[0] : term
-        ap = byEmail?.find(p => p.username === emailPrefix) ?? null
-      }
-      if (!ap) { setPostError(`User "${assignee.trim()}" not found. Try their @username.`); setPosting(false); return }
+      const term = assignee.trim().replace(/^@/, '')
+      // Search by username (exact match)
+      const { data: ap } = await sb.from('profiles').select('id').eq('username', term).maybeSingle()
+      if (!ap) { setPostError(`Username @${term} not found. Make sure they have signed up and set their username.`); setPosting(false); return }
       assigneeId = ap.id
     }
 
     await sb.from('manager_projects').insert({
       manager_id: user.id, title, description, timeline, pay_type: payType,
       skills_required: skills, visibility, assigned_to: assigneeId,
-      status: visibility === 'private' && assigneeId ? 'draft' : 'open',
+      status: 'open',
       created_at: new Date().toISOString(),
     })
 
