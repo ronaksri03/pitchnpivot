@@ -32,6 +32,12 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [showEdit, setShowEdit] = useState(false)
   const [tab, setTab] = useState<Tab>('reels')
+  const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
+  const [submitUrl, setSubmitUrl] = useState('')
+  const [submitNote, setSubmitNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [submitDone, setSubmitDone] = useState<string | null>(null) // projectId of done submission
   const sb = getClient()
 
   useEffect(() => {
@@ -89,6 +95,25 @@ export default function ProfilePage() {
       setVisits(visitsPlain || [])
     }
     setLoading(false)
+  }
+
+  async function submitWork(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || !submitProject) return
+    setSubmitting(true); setSubmitError('')
+    const { error } = await sb.from('project_submissions').insert({
+      project_id: submitProject.id,
+      individual_id: user.id,
+      submission_url: submitUrl || null,
+      note: submitNote || null,
+    })
+    if (error) {
+      setSubmitError(error.code === '23505' ? 'You already submitted work for this project.' : error.message)
+    } else {
+      setSubmitDone(submitProject.id)
+      setSubmitProject(null); setSubmitUrl(''); setSubmitNote('')
+    }
+    setSubmitting(false)
   }
 
   if (authLoading || loading) {
@@ -410,7 +435,17 @@ export default function ProfilePage() {
               : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
                 {assigned.map(p => (
                   <div key={p.id} style={{ background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>{p.title}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>{p.title}</div>
+                      {submitDone === p.id ? (
+                        <span style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700 }}>✓ Submitted</span>
+                      ) : (
+                        <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitError('') }}
+                          style={{ fontSize: '12px', padding: '5px 12px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          Submit Work →
+                        </button>
+                      )}
+                    </div>
                     {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name && (
                       <div style={{ fontSize: '13px', color: '#888' }}>
                         {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name}
@@ -456,6 +491,36 @@ export default function ProfilePage() {
 
       {showEdit && profile && (
         <EditProfileModal profile={profile} onClose={() => setShowEdit(false)} onSaved={(p) => setProfile(p)} />
+      )}
+
+      {/* Submit Work Modal */}
+      {submitProject && (
+        <div onClick={e => e.target === e.currentTarget && setSubmitProject(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '24px' }}>
+          <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: '#555', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Submit Work</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0ece4', marginTop: '2px' }}>{submitProject.title}</div>
+              </div>
+              <button onClick={() => setSubmitProject(null)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+            </div>
+            <form onSubmit={submitWork} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Submission link</label>
+                <input style={{ width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }} placeholder="https://github.com/you/project" value={submitUrl} onChange={e => setSubmitUrl(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Note to manager <span style={{ color: '#444' }}>(optional)</span></label>
+                <textarea style={{ width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const, resize: 'vertical' }} placeholder="Describe what you built…" rows={3} value={submitNote} onChange={e => setSubmitNote(e.target.value)} />
+              </div>
+              {submitError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{submitError}</div>}
+              <button type="submit" disabled={submitting} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                {submitting ? 'Submitting…' : 'Submit Work →'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

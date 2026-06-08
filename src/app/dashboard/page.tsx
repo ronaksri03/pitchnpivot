@@ -69,12 +69,12 @@ export default function DashboardPage() {
     setProjects(projs)
     setLoading(false)
 
-    const publicIds = projs.filter(p => p.visibility === 'public').map(p => p.id)
-    if (publicIds.length > 0) {
+    const allIds = projs.map(p => p.id)
+    if (allIds.length > 0) {
       const { data: subs } = await sb
         .from('project_submissions')
         .select('*, profiles(first_name, last_name, username, job_title)')
-        .in('project_id', publicIds)
+        .in('project_id', allIds)
         .order('submitted_at', { ascending: false })
       const grouped: Record<string, ProjectSubmission[]> = {}
       ;(subs || []).forEach(s => {
@@ -311,11 +311,9 @@ export default function DashboardPage() {
                     <button onClick={() => startEdit(p)} style={{ fontSize: '12px', color: '#888', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
                       ✎ Edit
                     </button>
-                    {p.visibility === 'public' && (
-                      <button onClick={() => setExpandedProject(isExpanded ? null : p.id)} style={{ fontSize: '12px', color: subs.length > 0 ? '#c8ff00' : '#555', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>
-                        {subs.length} submission{subs.length !== 1 ? 's' : ''} {isExpanded ? '▲' : '▼'}
-                      </button>
-                    )}
+                    <button onClick={() => setExpandedProject(isExpanded ? null : p.id)} style={{ fontSize: '12px', color: subs.length > 0 ? '#c8ff00' : '#555', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>
+                      {subs.length} submission{subs.length !== 1 ? 's' : ''} {isExpanded ? '▲' : '▼'}
+                    </button>
                   </div>
                 </div>
 
