@@ -41,18 +41,36 @@ export default function ProfilePage() {
 
   async function loadAll() {
     if (!user) return
-    const [profRes, reelRes, projRes, assignedRes, visitRes] = await Promise.all([
+    const [profRes, reelRes, projRes, assignedRes] = await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).single(),
       sb.from('reels').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       sb.from('individual_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       sb.from('manager_projects').select('*, managers(name, company)').eq('assigned_to', user.id).order('created_at', { ascending: false }),
-      sb.from('profile_views').select('*, managers(name, company)').eq('profile_user_id', user.id).order('viewed_at', { ascending: false }).limit(20),
     ])
     setProfile(profRes.data)
     setReels(reelRes.data || [])
     setProjects(projRes.data || [])
     setAssigned(assignedRes.data || [])
-    setVisits(visitRes.data || [])
+
+    // Fetch visits — try with managers join first, fall back to plain select
+    const { data: visitsWithMgr, error: visitsErr } = await sb
+      .from('profile_views')
+      .select('*, managers(name, company)')
+      .eq('profile_user_id', user.id)
+      .order('viewed_at', { ascending: false })
+      .limit(20)
+    if (!visitsErr) {
+      setVisits(visitsWithMgr || [])
+    } else {
+      console.warn('[profile_views join error]', visitsErr.message, '— falling back to plain select')
+      const { data: visitsPlain } = await sb
+        .from('profile_views')
+        .select('*')
+        .eq('profile_user_id', user.id)
+        .order('viewed_at', { ascending: false })
+        .limit(20)
+      setVisits(visitsPlain || [])
+    }
     setLoading(false)
   }
 
