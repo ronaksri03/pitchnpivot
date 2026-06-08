@@ -46,7 +46,12 @@ export default function ProfileModal({ profileId, onClose }: Props) {
       // Log profile view if manager
       const { data: { user } } = await sb.auth.getUser()
       if (user && user.user_metadata?.account_type === 'manager') {
-        await sb.from('profile_views').insert({ profile_user_id: profileId, manager_id: user.id })
+        const { error: viewErr } = await sb.from('profile_views').insert({
+          profile_user_id: profileId,
+          manager_id: user.id,
+          viewed_at: new Date().toISOString(),
+        })
+        if (viewErr) console.error('[profile_views insert]', viewErr.message, viewErr.code)
       }
     }
     load()
