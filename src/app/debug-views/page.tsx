@@ -7,84 +7,72 @@ export default function DebugViewsPage() {
   const [log, setLog] = useState<string[]>([])
   const sb = getClient()
 
-  function line(msg: string) {
-    setLog(prev => [...prev, msg])
-  }
+  function line(msg: string) { setLog(prev => [...prev, msg]) }
 
-  useEffect(() => {
-    run()
-  }, [])
+  useEffect(() => { run() }, [])
 
   async function run() {
-    line('=== Profile Views Debug ===')
+    line('=== Profile Views Debug v2 ===')
 
-    // 1. Get current user
-    const { data: { user }, error: userErr } = await sb.auth.getUser()
-    if (userErr || !user) {
-      line('❌ Not logged in: ' + (userErr?.message || 'no user'))
-      return
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { line('❌ Not logged in'); return }
+    line('✅ user: ' + user.email + ' / ' + user.id)
+    line('   account_type: ' + user.user_metadata?.account_type)
+
+    // All rows in profile_views
+    const { data: allViews, error: allErr } = await sb
+      .from('profile_views').select('*').order('viewed_at', { ascending: false }).limit(20)
+    if (allErr) line('❌ profile_views SELECT error: ' + allErr.message + ' [' + allErr.code + ']')
+    else {
+      line('📊 Total rows in profile_views visible to this user: ' + (allViews?.length ?? 0))
+      allViews?.forEach(v => line('   row: profile_user_id=' + v.profile_user_id + ' manager_id=' + v.manager_id + ' at=' + v.viewed_at))
     }
-    line('✅ Logged in as: ' + user.email)
-    line('   user.id: ' + user.id)
-    line('   account_type (metadata): ' + (user.user_metadata?.account_type || 'NOT SET'))
 
-    // 2. Check managers table for this user
-    const { data: managerRow, error: mgrErr } = await sb
-      .from('managers').select('id, name, company').eq('id', user.id).maybeSingle()
-    if (mgrErr) line('❌ managers table read error: ' + mgrErr.message + ' [' + mgrErr.code + ']')
-    else if (managerRow) line('✅ Found in managers table: ' + JSON.stringify(managerRow))
-    else line('⚠️  NOT found in managers table')
-
-    // 3. Pick a target profile to test against
+    // All profiles
     const { data: profiles, error: profErr } = await sb
-      .from('profiles').select('id, first_name, last_name').limit(1)
-    if (profErr || !profiles?.length) {
-      line('❌ Could not fetch a profile to test against: ' + (profErr?.message || 'no profiles'))
-      return
+      .from('profiles').select('id, first_name, last_name, username').limit(10)
+    if (profErr) line('❌ profiles error: ' + profErr.message)
+    else {
+      line('👤 Profiles in DB: ' + (profiles?.length ?? 0))
+      profiles?.forEach(p => line('   ' + p.id + ' — ' + [p.first_name, p.last_name].join(' ').trim() + ' (@' + p.username + ')'))
     }
-    const target = profiles[0]
-    line('📋 Test target profile: ' + target.id + ' (' + [target.first_name, target.last_name].join(' ').trim() + ')')
 
-    // 4. Try the insert
-    line('⏳ Attempting profile_views insert...')
-    const { data: inserted, error: insertErr } = await sb
-      .from('profile_views')
-      .insert({ profile_user_id: target.id, manager_id: user.id, viewed_at: new Date().toISOString() })
-      .select()
-    if (insertErr) {
-      line('❌ INSERT FAILED: ' + insertErr.message)
-      line('   code: ' + insertErr.code)
-      line('   details: ' + insertErr.details)
-      line('   hint: ' + insertErr.hint)
+    // Try insert for a real individual (not manager)
+    const individuals = profiles?.filter(p => p.id !== user.id) ?? []
+    if (individuals.length === 0) {
+      line('⚠️  No other profiles found — only the manager\'s own profile exists')
+      line('   This means no individuals have signed up yet!')
     } else {
-      line('✅ INSERT SUCCEEDED: ' + JSON.stringify(inserted))
-    }
+      const target = individuals[0]
+      line('📋 Testing insert for individual: ' + target.id)
+      const { error: insertErr } = await sb.from('profile_views').insert({
+        profile_user_id: target.id,
+        manager_id: user.id,
+        viewed_at: new Date().toISOString(),
+      })
+      if (insertErr) line('❌ INSERT failed: ' + insertErr.message + ' [' + insertErr.code + ']')
+      else line('✅ INSERT succeeded for individual profile')
 
-    // 5. Try to read back
-    const { data: views, error: viewsErr } = await sb
-      .from('profile_views').select('*').eq('profile_user_id', target.id).limit(5)
-    if (viewsErr) line('❌ SELECT failed: ' + viewsErr.message)
-    else line('📊 Rows in profile_views for this profile: ' + views?.length)
+      // Read back as if we were the individual
+      const { data: readBack, error: readErr } = await sb
+        .from('profile_views').select('*').eq('profile_user_id', target.id)
+      if (readErr) line('❌ READ BACK failed: ' + readErr.message)
+      else line('📊 Rows visible for that individual: ' + (readBack?.length ?? 0))
+    }
 
     line('=== Done ===')
   }
 
   return (
     <div style={{ padding: '40px 24px', maxWidth: '700px', margin: '0 auto' }}>
-      <h2 style={{ color: '#c8ff00', marginBottom: '20px', fontFamily: 'monospace' }}>profile_views debug</h2>
+      <h2 style={{ color: '#c8ff00', marginBottom: '20px', fontFamily: 'monospace' }}>debug-views v2</h2>
       <div style={{ background: '#0f0f0f', border: '1px solid #222', borderRadius: '10px', padding: '20px', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.8' }}>
         {log.length === 0
           ? <span style={{ color: '#555' }}>Running…</span>
           : log.map((l, i) => (
-            <div key={i} style={{
-              color: l.startsWith('✅') ? '#c8ff00' : l.startsWith('❌') ? '#ff6b6b' : l.startsWith('⚠️') ? '#ffaa00' : '#ccc'
-            }}>{l}</div>
-          ))
-        }
+            <div key={i} style={{ color: l.startsWith('✅') ? '#c8ff00' : l.startsWith('❌') ? '#ff6b6b' : l.startsWith('⚠️') ? '#ffaa00' : '#ccc' }}>{l}</div>
+          ))}
       </div>
-      <p style={{ color: '#555', fontSize: '12px', marginTop: '12px' }}>
-        Share the output above to diagnose the issue.
-      </p>
     </div>
   )
 }
