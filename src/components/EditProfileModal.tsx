@@ -19,7 +19,6 @@ export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [skillInput, setSkillInput] = useState('')
-  const [activeSection, setActiveSection] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     first_name: profile.first_name || '',
@@ -82,281 +81,203 @@ export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
     onClose()
   }
 
-  const sections = [
-    { id: 'basic', icon: '👤', label: 'Basic Info' },
-    { id: 'identity', icon: '📍', label: 'Identity & Location' },
-    { id: 'experience', icon: '💼', label: 'Experience' },
-    { id: 'work', icon: '🏠', label: 'Work Preferences' },
-    { id: 'skills', icon: '⚡', label: 'Skills' },
-    { id: 'links', icon: '🔗', label: 'Links & Socials' },
-  ]
+  const inp: React.CSSProperties = {
+    width: '100%', background: '#1a1a1a', border: '1px solid #333',
+    borderRadius: '10px', color: '#f0ece4', fontSize: '15px',
+    padding: '12px 16px', outline: 'none', boxSizing: 'border-box',
+    transition: 'border-color 0.15s',
+  }
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'stretch', justifyContent: 'center', padding: '0' }}
       onClick={onClose}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#0d0d0d', border: '1px solid #222', borderRadius: '18px',
-          width: '100%', maxWidth: '640px', maxHeight: '92vh',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,255,0,0.04)',
+          background: '#0d0d0d', border: '1px solid #2a2a2a',
+          width: '100%', maxWidth: '900px', margin: '24px',
+          borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          boxShadow: '0 32px 100px rgba(0,0,0,0.7)',
         }}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 24px', borderBottom: '1px solid #1a1a1a', flexShrink: 0,
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 32px', borderBottom: '1px solid #1e1e1e', flexShrink: 0 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#f0ece4' }}>Edit Profile</h2>
-            <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#555' }}>Changes are saved immediately</p>
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#f0ece4' }}>Edit Profile</h2>
+            <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#777' }}>Keep your profile fresh — managers notice</p>
           </div>
-          <button
-            onClick={onClose}
-            style={{ background: '#111', border: '1px solid #222', borderRadius: '8px', color: '#666', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.15s, border-color 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f0ece4'; e.currentTarget.style.borderColor = '#333' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#666'; e.currentTarget.style.borderColor = '#222' }}
-          >✕</button>
+          <button onClick={onClose} style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '10px', color: '#aaa', width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
 
-        {/* Body: sidebar nav + form */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Scrollable form */}
+        <form onSubmit={save} style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '36px' }}>
 
-          {/* Nav sidebar */}
-          <div style={{ width: '170px', flexShrink: 0, padding: '16px 12px', borderRight: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
-            {sections.map(s => (
-              <a
-                key={s.id}
-                href={`#edit-${s.id}`}
-                onClick={() => setActiveSection(s.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 10px', borderRadius: '8px', textDecoration: 'none',
-                  fontSize: '12px', fontWeight: 600, transition: 'background 0.15s, color 0.15s',
-                  background: activeSection === s.id ? 'rgba(200,255,0,0.08)' : 'transparent',
-                  color: activeSection === s.id ? '#c8ff00' : '#555',
-                  border: `1px solid ${activeSection === s.id ? 'rgba(200,255,0,0.15)' : 'transparent'}`,
-                }}
-              >
-                <span style={{ fontSize: '14px' }}>{s.icon}</span>
-                {s.label}
-              </a>
-            ))}
+          {/* Open to work toggle */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: form.open_to_work ? 'rgba(200,255,0,0.06)' : '#111',
+            border: `1px solid ${form.open_to_work ? 'rgba(200,255,0,0.25)' : '#2a2a2a'}`,
+            borderRadius: '12px', padding: '16px 20px',
+          }}>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: form.open_to_work ? '#c8ff00' : '#f0ece4' }}>
+                {form.open_to_work ? '✦ Open to work' : '◉ Not currently looking'}
+              </div>
+              <div style={{ fontSize: '14px', color: '#777', marginTop: '3px' }}>Managers see this on your profile</div>
+            </div>
+            <button type="button" onClick={() => set('open_to_work', !form.open_to_work)} style={{
+              width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0, background: form.open_to_work ? '#c8ff00' : '#2a2a2a',
+            }}>
+              <div style={{ position: 'absolute', top: '3px', left: form.open_to_work ? '24px' : '3px', width: '20px', height: '20px', borderRadius: '50%', background: form.open_to_work ? '#0a0a0a' : '#666', transition: 'left 0.2s' }} />
+            </button>
           </div>
 
-          {/* Scrollable form */}
-          <form onSubmit={save} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-
-            {/* Open to work toggle — always visible at top */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: form.open_to_work ? 'rgba(200,255,0,0.05)' : '#111',
-              border: `1px solid ${form.open_to_work ? 'rgba(200,255,0,0.2)' : '#222'}`,
-              borderRadius: '10px', padding: '12px 16px',
-            }}>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: form.open_to_work ? '#c8ff00' : '#f0ece4' }}>
-                  {form.open_to_work ? '✦ Open to work' : '◉ Not currently looking'}
-                </div>
-                <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Managers can see your availability status</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => set('open_to_work', !form.open_to_work)}
-                style={{
-                  width: '40px', height: '22px', borderRadius: '11px', border: 'none', cursor: 'pointer',
-                  position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                  background: form.open_to_work ? '#c8ff00' : '#222',
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: '2px',
-                  left: form.open_to_work ? '20px' : '2px',
-                  width: '18px', height: '18px', borderRadius: '50%',
-                  background: form.open_to_work ? '#0a0a0a' : '#555',
-                  transition: 'left 0.2s',
-                }} />
-              </button>
-            </div>
-
-            {/* Basic Info */}
-            <Section id="edit-basic" label="👤 Basic Info">
-              <Row>
-                <Field label="First name">
-                  <input className="inp" placeholder="First name" value={form.first_name} onChange={e => set('first_name', e.target.value)} />
-                </Field>
-                <Field label="Last name">
-                  <input className="inp" placeholder="Last name" value={form.last_name} onChange={e => set('last_name', e.target.value)} />
-                </Field>
-              </Row>
+          {/* Basic Info */}
+          <FormSection label="👤 Basic Info">
+            <TwoCol>
+              <Field label="First name"><input style={inp} placeholder="First name" value={form.first_name} onChange={e => set('first_name', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="Last name"><input style={inp} placeholder="Last name" value={form.last_name} onChange={e => set('last_name', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+            <TwoCol>
               <Field label="Username">
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#555', fontSize: '14px' }}>@</span>
-                  <input className="inp" style={{ paddingLeft: '26px' }} placeholder="username" value={form.username} onChange={e => set('username', e.target.value)} />
+                  <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#666', fontSize: '16px' }}>@</span>
+                  <input style={{ ...inp, paddingLeft: '30px' }} placeholder="username" value={form.username} onChange={e => set('username', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
                 </div>
               </Field>
-              <Field label="Job title">
-                <input className="inp" placeholder="e.g. Full Stack Developer" value={form.job_title} onChange={e => set('job_title', e.target.value)} />
-              </Field>
-              <Field label="Bio">
-                <textarea className="inp" placeholder="Tell people who you are…" value={form.bio} onChange={e => set('bio', e.target.value)} rows={3} style={{ resize: 'vertical' }} />
-              </Field>
-            </Section>
+              <Field label="Job title"><input style={inp} placeholder="e.g. Full Stack Developer" value={form.job_title} onChange={e => set('job_title', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+            <Field label="Bio">
+              <textarea style={{ ...inp, resize: 'vertical', minHeight: '90px' }} placeholder="Tell people who you are…" value={form.bio} onChange={e => set('bio', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
+            </Field>
+          </FormSection>
 
-            {/* Identity & Location */}
-            <Section id="edit-identity" label="📍 Identity & Location">
-              <Field label="Pronouns">
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {PRONOUNS_OPTS.map(p => (
-                    <PillToggle key={p} active={form.pronouns === p} onClick={() => set('pronouns', form.pronouns === p ? '' : p)}>
-                      {p}
-                    </PillToggle>
-                  ))}
-                </div>
-              </Field>
-              <Row>
-                <Field label="Location">
-                  <input className="inp" placeholder="Mumbai, India" value={form.location} onChange={e => set('location', e.target.value)} />
-                </Field>
-                <Field label="Timezone">
-                  <input className="inp" placeholder="IST / GMT+5:30" value={form.timezone} onChange={e => set('timezone', e.target.value)} />
-                </Field>
-              </Row>
-            </Section>
+          {/* Identity & Location */}
+          <FormSection label="📍 Identity & Location">
+            <Field label="Pronouns">
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {PRONOUNS_OPTS.map(p => (
+                  <PillToggle key={p} active={form.pronouns === p} onClick={() => set('pronouns', form.pronouns === p ? '' : p)}>{p}</PillToggle>
+                ))}
+              </div>
+            </Field>
+            <TwoCol>
+              <Field label="Location"><input style={inp} placeholder="Mumbai, India" value={form.location} onChange={e => set('location', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="Timezone"><input style={inp} placeholder="IST / GMT+5:30" value={form.timezone} onChange={e => set('timezone', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+          </FormSection>
 
-            {/* Experience */}
-            <Section id="edit-experience" label="💼 Experience">
-              <Row>
-                <Field label="Years of experience">
-                  <input className="inp" placeholder="e.g. 3" value={form.years_exp} onChange={e => set('years_exp', e.target.value)} />
-                </Field>
-                <Field label="College / University">
-                  <input className="inp" placeholder="MIT, IIT Delhi…" value={form.college} onChange={e => set('college', e.target.value)} />
-                </Field>
-              </Row>
-              <Field label="Hourly rate">
-                <input className="inp" placeholder="e.g. $50–100/hr or ₹2000/hr" value={form.hourly_rate} onChange={e => set('hourly_rate', e.target.value)} />
-              </Field>
-              <Field label="Looking for">
-                <textarea className="inp" placeholder="e.g. Founding engineer roles, AI freelance projects…" value={form.looking_for} onChange={e => set('looking_for', e.target.value)} rows={2} style={{ resize: 'vertical' }} />
-              </Field>
-            </Section>
+          {/* Experience */}
+          <FormSection label="💼 Experience">
+            <TwoCol>
+              <Field label="Years of experience"><input style={inp} placeholder="e.g. 3" value={form.years_exp} onChange={e => set('years_exp', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="College / University"><input style={inp} placeholder="IIT Bombay, MIT…" value={form.college} onChange={e => set('college', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+            <Field label="Hourly rate"><input style={inp} placeholder="e.g. $50–100/hr or ₹2000/hr" value={form.hourly_rate} onChange={e => set('hourly_rate', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            <Field label="Looking for">
+              <textarea style={{ ...inp, resize: 'vertical', minHeight: '70px' }} placeholder="Founding engineer roles, AI freelance projects…" value={form.looking_for} onChange={e => set('looking_for', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
+            </Field>
+          </FormSection>
 
-            {/* Work Preferences */}
-            <Section id="edit-work" label="🏠 Work Preferences">
-              <Field label="Work style">
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {WORK_PREFS.map(w => (
-                    <PillToggle key={w} active={form.work_pref === w} onClick={() => set('work_pref', form.work_pref === w ? '' : w)}>
-                      {w.charAt(0).toUpperCase() + w.slice(1)}
-                    </PillToggle>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Availability">
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {AVAILABILITY_OPTS.map(a => (
-                    <PillToggle key={a} active={form.availability === a} onClick={() => set('availability', form.availability === a ? '' : a)}>
-                      {a.charAt(0).toUpperCase() + a.slice(1)}
-                    </PillToggle>
-                  ))}
-                </div>
-              </Field>
-            </Section>
+          {/* Work Preferences */}
+          <FormSection label="🏠 Work Preferences">
+            <Field label="Work style">
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {WORK_PREFS.map(w => (
+                  <PillToggle key={w} active={form.work_pref === w} onClick={() => set('work_pref', form.work_pref === w ? '' : w)}>
+                    {w.charAt(0).toUpperCase() + w.slice(1)}
+                  </PillToggle>
+                ))}
+              </div>
+            </Field>
+            <Field label="Availability">
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {AVAILABILITY_OPTS.map(a => (
+                  <PillToggle key={a} active={form.availability === a} onClick={() => set('availability', form.availability === a ? '' : a)}>
+                    {a.charAt(0).toUpperCase() + a.slice(1)}
+                  </PillToggle>
+                ))}
+              </div>
+            </Field>
+          </FormSection>
 
-            {/* Skills */}
-            <Section id="edit-skills" label="⚡ Skills">
-              <Field label="Add skills">
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    className="inp" style={{ flex: 1 }}
-                    placeholder="e.g. React, Figma, Python…"
-                    value={skillInput}
-                    onChange={e => setSkillInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
-                  />
-                  <button type="button" onClick={addSkill} style={{
-                    background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px',
-                    fontWeight: 700, fontSize: '13px', padding: '0 16px', cursor: 'pointer', flexShrink: 0,
-                  }}>Add</button>
-                </div>
-              </Field>
-              {form.skills.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {form.skills.map(s => (
-                    <button
-                      key={s} type="button" onClick={() => removeSkill(s)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        fontSize: '12px', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer',
-                        background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)',
-                        color: '#a8d400', fontWeight: 500, transition: 'opacity 0.15s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                    >
-                      {s} <span style={{ fontSize: '10px', opacity: 0.7 }}>✕</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            {/* Links */}
-            <Section id="edit-links" label="🔗 Links & Socials">
-              <Field label="GitHub">
-                <input className="inp" placeholder="https://github.com/username" value={form.github_url} onChange={e => set('github_url', e.target.value)} />
-              </Field>
-              <Field label="Portfolio">
-                <input className="inp" placeholder="https://yourportfolio.com" value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} />
-              </Field>
-              <Field label="LinkedIn">
-                <input className="inp" placeholder="https://linkedin.com/in/username" value={form.linkedin_url} onChange={e => set('linkedin_url', e.target.value)} />
-              </Field>
-              <Field label="Twitter / X">
-                <input className="inp" placeholder="https://x.com/username" value={form.twitter_url} onChange={e => set('twitter_url', e.target.value)} />
-              </Field>
-              <Field label="Website">
-                <input className="inp" placeholder="https://yoursite.com" value={form.website_url} onChange={e => set('website_url', e.target.value)} />
-              </Field>
-              <Field label="Discord">
-                <input className="inp" placeholder="username#1234 or username" value={form.discord_handle} onChange={e => set('discord_handle', e.target.value)} />
-              </Field>
-            </Section>
-
-            {error && (
-              <div style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#ff6b6b' }}>
-                {error}
+          {/* Skills */}
+          <FormSection label="⚡ Skills">
+            <Field label="Add skills">
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input style={{ ...inp, flex: 1 }} placeholder="React, Figma, Python… press Enter" value={skillInput}
+                  onChange={e => setSkillInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
+                  onFocus={focusStyle} onBlur={blurStyle}
+                />
+                <button type="button" onClick={addSkill} style={{ background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '14px', padding: '0 20px', cursor: 'pointer', flexShrink: 0 }}>Add</button>
+              </div>
+            </Field>
+            {form.skills.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {form.skills.map(s => (
+                  <button key={s} type="button" onClick={() => removeSkill(s)} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', padding: '6px 12px',
+                    borderRadius: '20px', cursor: 'pointer', background: 'rgba(200,255,0,0.08)',
+                    border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00', fontWeight: 500,
+                  }}>
+                    {s} <span style={{ fontSize: '11px', opacity: 0.7 }}>✕</span>
+                  </button>
+                ))}
               </div>
             )}
+          </FormSection>
 
-            <button
-              type="submit" disabled={saving}
-              style={{
-                background: saving ? '#333' : '#c8ff00', color: saving ? '#666' : '#0a0a0a',
-                border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '14px',
-                padding: '13px 20px', cursor: saving ? 'not-allowed' : 'pointer',
-                transition: 'opacity 0.15s', width: '100%',
-              }}
-            >
-              {saving ? 'Saving…' : 'Save profile →'}
-            </button>
-          </form>
-        </div>
+          {/* Links */}
+          <FormSection label="🔗 Links & Socials">
+            <TwoCol>
+              <Field label="GitHub"><input style={inp} placeholder="https://github.com/username" value={form.github_url} onChange={e => set('github_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="Portfolio"><input style={inp} placeholder="https://yourportfolio.com" value={form.portfolio_url} onChange={e => set('portfolio_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+            <TwoCol>
+              <Field label="LinkedIn"><input style={inp} placeholder="https://linkedin.com/in/username" value={form.linkedin_url} onChange={e => set('linkedin_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="Twitter / X"><input style={inp} placeholder="https://x.com/username" value={form.twitter_url} onChange={e => set('twitter_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+            <TwoCol>
+              <Field label="Website"><input style={inp} placeholder="https://yoursite.com" value={form.website_url} onChange={e => set('website_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+              <Field label="Discord"><input style={inp} placeholder="username or username#1234" value={form.discord_handle} onChange={e => set('discord_handle', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} /></Field>
+            </TwoCol>
+          </FormSection>
+
+          {error && (
+            <div style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.25)', borderRadius: '10px', padding: '12px 16px', fontSize: '14px', color: '#ff7070' }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={saving} style={{
+            background: saving ? '#222' : '#c8ff00', color: saving ? '#555' : '#0a0a0a',
+            border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '16px',
+            padding: '16px 20px', cursor: saving ? 'not-allowed' : 'pointer', width: '100%',
+          }}>
+            {saving ? 'Saving…' : 'Save profile →'}
+          </button>
+        </form>
       </div>
     </div>
   )
 }
 
-// ── Helpers ──
+// ── Focus helpers ──
+function focusStyle(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  e.currentTarget.style.borderColor = '#c8ff00'
+}
+function blurStyle(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  e.currentTarget.style.borderColor = '#333'
+}
 
-function Section({ id, label, children }: { id?: string; label: string; children: React.ReactNode }) {
+// ── Layout helpers ──
+function FormSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div id={id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '8px', borderBottom: '1px solid #1a1a1a' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 700, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '10px', borderBottom: '1px solid #1e1e1e' }}>
         {label}
       </div>
       {children}
@@ -364,14 +285,14 @@ function Section({ id, label, children }: { id?: string; label: string; children
   )
 }
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', gap: '10px' }}>{children}</div>
+function TwoCol({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>{children}</div>
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 600, color: '#555' }}>{label}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 600, color: '#aaa' }}>{label}</div>
       {children}
     </div>
   )
@@ -379,16 +300,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function PillToggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button" onClick={onClick}
-      style={{
-        fontSize: '12px', padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
-        fontWeight: 600, transition: 'all 0.15s', border: '1px solid',
-        background: active ? 'rgba(200,255,0,0.12)' : 'transparent',
-        borderColor: active ? 'rgba(200,255,0,0.3)' : '#2a2a2a',
-        color: active ? '#c8ff00' : '#555',
-      }}
-    >
+    <button type="button" onClick={onClick} style={{
+      fontSize: '14px', padding: '7px 16px', borderRadius: '20px', cursor: 'pointer',
+      fontWeight: 600, transition: 'all 0.15s', border: '1px solid',
+      background: active ? 'rgba(200,255,0,0.1)' : 'transparent',
+      borderColor: active ? 'rgba(200,255,0,0.35)' : '#333',
+      color: active ? '#c8ff00' : '#888',
+    }}>
       {children}
     </button>
   )

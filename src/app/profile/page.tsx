@@ -60,9 +60,9 @@ export default function ProfilePage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #1e1e1e', borderTopColor: '#c8ff00', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #333', borderTopColor: '#c8ff00', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-          <div style={{ fontSize: '13px', color: '#444' }}>Loading your profile…</div>
+          <div style={{ fontSize: '15px', color: '#888' }}>Loading your profile…</div>
         </div>
       </div>
     )
@@ -85,73 +85,61 @@ export default function ProfilePage() {
       {/* ── HERO BANNER ── */}
       <div style={{
         position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #111 50%, #0d1a00 100%)',
-        borderBottom: '1px solid #1a1a1a',
+        background: 'linear-gradient(135deg, #111 0%, #141414 60%, #0d1a00 100%)',
+        borderBottom: '1px solid #2a2a2a',
       }}>
-        {/* Accent glow */}
-        <div style={{
-          position: 'absolute', top: '-80px', right: '-80px',
-          width: '300px', height: '300px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(200,255,0,0.08) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '320px', height: '320px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,255,0,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px 36px' }}>
+        <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '44px 28px 36px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
 
             {/* Avatar */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{
-                width: '88px', height: '88px', borderRadius: '50%',
+                width: '92px', height: '92px', borderRadius: '50%',
                 background: '#c8ff00',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '30px', fontWeight: 900, color: '#0a0a0a',
-                boxShadow: '0 0 0 3px #0a0a0a, 0 0 0 5px rgba(200,255,0,0.25), 0 0 30px rgba(200,255,0,0.12)',
+                fontSize: '32px', fontWeight: 900, color: '#0a0a0a',
+                boxShadow: '0 0 0 3px #0a0a0a, 0 0 0 5px rgba(200,255,0,0.3), 0 0 32px rgba(200,255,0,0.1)',
               }}>
                 {initials(name)}
               </div>
-              {/* Online-ish status dot */}
-              <div style={{
-                position: 'absolute', bottom: '4px', right: '4px',
-                width: '14px', height: '14px', borderRadius: '50%',
-                background: profile?.open_to_work ? '#c8ff00' : '#2a2a2a',
-                border: '2px solid #0a0a0a',
-              }} />
+              <div style={{ position: 'absolute', bottom: '4px', right: '4px', width: '16px', height: '16px', borderRadius: '50%', background: profile?.open_to_work ? '#c8ff00' : '#333', border: '2px solid #0a0a0a' }} />
             </div>
 
             {/* Name + meta */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 900, color: '#f0ece4', letterSpacing: '-0.02em' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900, color: '#f0ece4', letterSpacing: '-0.02em' }}>
                   {name}
                 </h1>
                 {profile?.pronouns && (
-                  <span style={{ fontSize: '11px', color: '#555', background: '#111', border: '1px solid #222', borderRadius: '20px', padding: '2px 8px' }}>
+                  <span style={{ fontSize: '13px', color: '#aaa', background: '#1a1a1a', border: '1px solid #333', borderRadius: '20px', padding: '2px 10px' }}>
                     {profile.pronouns}
                   </span>
                 )}
                 <span style={{
-                  fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px',
-                  background: profile?.open_to_work ? 'rgba(200,255,0,0.1)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${profile?.open_to_work ? 'rgba(200,255,0,0.3)' : '#222'}`,
-                  color: profile?.open_to_work ? '#c8ff00' : '#444',
+                  fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px',
+                  background: profile?.open_to_work ? 'rgba(200,255,0,0.12)' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${profile?.open_to_work ? 'rgba(200,255,0,0.35)' : '#333'}`,
+                  color: profile?.open_to_work ? '#c8ff00' : '#888',
                 }}>
                   {profile?.open_to_work ? '✦ Open to work' : '○ Not looking'}
                 </span>
               </div>
 
               {profile?.job_title && (
-                <div style={{ fontSize: '15px', color: '#888', marginBottom: '6px' }}>
+                <div style={{ fontSize: '17px', color: '#bbb', marginBottom: '8px', fontWeight: 500 }}>
                   {profile.job_title}
-                  {profile.years_exp && <span style={{ color: '#555' }}> · {profile.years_exp} yrs exp</span>}
+                  {profile.years_exp && <span style={{ color: '#777', fontWeight: 400 }}> · {profile.years_exp} yrs exp</span>}
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '12px', color: '#555' }}>
+              <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', fontSize: '14px', color: '#888' }}>
                 {profile?.location && <span>📍 {profile.location}</span>}
                 {profile?.timezone && <span>🕐 {profile.timezone}</span>}
                 {profile?.college && <span>🎓 {profile.college}</span>}
-                {profile?.username && <span style={{ color: '#444' }}>@{profile.username}</span>}
+                {profile?.username && <span style={{ color: '#666' }}>@{profile.username}</span>}
               </div>
             </div>
 
@@ -159,16 +147,16 @@ export default function ProfilePage() {
             <button
               onClick={() => setShowEdit(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid #2a2a2a',
-                borderRadius: '8px', color: '#f0ece4', fontSize: '13px',
-                fontWeight: 600, padding: '9px 16px', cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s', flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                background: 'rgba(255,255,255,0.07)', border: '1px solid #333',
+                borderRadius: '10px', color: '#ddd', fontSize: '14px',
+                fontWeight: 600, padding: '10px 18px', cursor: 'pointer',
+                transition: 'border-color 0.2s, color 0.2s', flexShrink: 0,
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8ff00'; e.currentTarget.style.color = '#c8ff00' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#f0ece4' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#ddd' }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
@@ -177,7 +165,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats row */}
-          <div style={{ display: 'flex', gap: '28px', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #1a1a1a' }}>
+          <div style={{ display: 'flex', gap: '32px', marginTop: '28px', paddingTop: '22px', borderTop: '1px solid #222' }}>
             {[
               { label: 'Reels', value: reels.length },
               { label: 'Projects', value: projects.length },
@@ -185,8 +173,8 @@ export default function ProfilePage() {
               { label: 'Assigned', value: assigned.length },
             ].map(s => (
               <div key={s.label}>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: '#f0ece4', letterSpacing: '-0.02em' }}>{s.value}</div>
-                <div style={{ fontSize: '11px', color: '#555', marginTop: '1px' }}>{s.label}</div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: '#f0ece4', letterSpacing: '-0.02em' }}>{s.value}</div>
+                <div style={{ fontSize: '13px', color: '#777', marginTop: '2px' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -194,32 +182,29 @@ export default function ProfilePage() {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 24px', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '28px', alignItems: 'start' }}>
+      <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '32px 28px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '28px', alignItems: 'start' }}>
 
         {/* ── LEFT SIDEBAR ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
-          {/* Bio */}
           {profile?.bio && (
             <SideCard>
               <SideLabel>About</SideLabel>
-              <p style={{ margin: 0, fontSize: '13px', color: '#888', lineHeight: 1.7 }}>{profile.bio}</p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#bbb', lineHeight: 1.75 }}>{profile.bio}</p>
             </SideCard>
           )}
 
-          {/* Looking for */}
           {profile?.looking_for && (
             <SideCard accent>
               <SideLabel accent>Looking for</SideLabel>
-              <p style={{ margin: 0, fontSize: '13px', color: '#999', lineHeight: 1.65 }}>{profile.looking_for}</p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#ccc', lineHeight: 1.7 }}>{profile.looking_for}</p>
             </SideCard>
           )}
 
-          {/* Work details */}
           {(profile?.work_pref || profile?.availability || profile?.hourly_rate) && (
             <SideCard>
               <SideLabel>Work</SideLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {profile?.work_pref && <Detail icon="🏠" label={cap(profile.work_pref)} />}
                 {profile?.availability && <Detail icon="📅" label={cap(profile.availability)} />}
                 {profile?.hourly_rate && <Detail icon="💰" label={profile.hourly_rate} />}
@@ -227,34 +212,32 @@ export default function ProfilePage() {
             </SideCard>
           )}
 
-          {/* Skills */}
           {(profile?.skills?.length ?? 0) > 0 && (
             <SideCard>
               <SideLabel>Skills</SideLabel>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {profile!.skills.map(s => (
                   <span key={s} style={{
-                    fontSize: '11px', padding: '3px 9px', borderRadius: '20px',
-                    background: 'rgba(200,255,0,0.07)', border: '1px solid rgba(200,255,0,0.18)',
-                    color: '#a8d400', fontWeight: 500,
+                    fontSize: '13px', padding: '4px 11px', borderRadius: '20px',
+                    background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)',
+                    color: '#c8ff00', fontWeight: 500,
                   }}>{s}</span>
                 ))}
               </div>
             </SideCard>
           )}
 
-          {/* Links */}
           {profile && (profile.github_url || profile.portfolio_url || profile.linkedin_url || profile.twitter_url || profile.website_url || profile.discord_handle) && (
             <SideCard>
               <SideLabel>Links</SideLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {profile.github_url && <SocialLink icon="🐙" label="GitHub" url={profile.github_url} />}
                 {profile.portfolio_url && <SocialLink icon="🎨" label="Portfolio" url={profile.portfolio_url} />}
                 {profile.linkedin_url && <SocialLink icon="💼" label="LinkedIn" url={profile.linkedin_url} />}
                 {profile.twitter_url && <SocialLink icon="𝕏" label="Twitter / X" url={profile.twitter_url} />}
                 {profile.website_url && <SocialLink icon="🌐" label="Website" url={profile.website_url} />}
                 {profile.discord_handle && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#666' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#aaa' }}>
                     <span>💬</span><span>{profile.discord_handle}</span>
                   </div>
                 )}
@@ -266,27 +249,27 @@ export default function ProfilePage() {
         {/* ── RIGHT: TABS ── */}
         <div>
           {/* Tab bar */}
-          <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: '10px', padding: '4px' }}>
+          <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '4px' }}>
             {tabs.map(t => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 style={{
-                  flex: 1, border: 'none', cursor: 'pointer', borderRadius: '7px',
-                  padding: '8px 6px', fontSize: '12px', fontWeight: 600,
+                  flex: 1, border: 'none', cursor: 'pointer', borderRadius: '8px',
+                  padding: '10px 6px', fontSize: '14px', fontWeight: 600,
                   transition: 'all 0.15s',
-                  background: tab === t.key ? '#1a1a1a' : 'transparent',
-                  color: tab === t.key ? '#f0ece4' : '#555',
-                  boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.4)' : 'none',
+                  background: tab === t.key ? '#1e1e1e' : 'transparent',
+                  color: tab === t.key ? '#f0ece4' : '#777',
+                  boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.5)' : 'none',
                 }}
               >
                 {t.label}
                 {t.count > 0 && (
                   <span style={{
-                    marginLeft: '6px', fontSize: '10px', fontWeight: 700,
-                    padding: '1px 6px', borderRadius: '20px',
-                    background: tab === t.key ? 'rgba(200,255,0,0.15)' : 'rgba(255,255,255,0.06)',
-                    color: tab === t.key ? '#c8ff00' : '#444',
+                    marginLeft: '7px', fontSize: '12px', fontWeight: 700,
+                    padding: '2px 7px', borderRadius: '20px',
+                    background: tab === t.key ? 'rgba(200,255,0,0.15)' : 'rgba(255,255,255,0.07)',
+                    color: tab === t.key ? '#c8ff00' : '#666',
                   }}>{t.count}</span>
                 )}
               </button>
@@ -301,33 +284,32 @@ export default function ProfilePage() {
                 {reels.map(r => (
                   <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                     <div style={{
-                      display: 'flex', alignItems: 'center', gap: '14px',
-                      background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: '12px',
-                      padding: '14px 16px', transition: 'border-color 0.2s, transform 0.15s',
-                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '16px',
+                      background: '#111', border: '1px solid #222', borderRadius: '12px',
+                      padding: '16px 18px', transition: 'border-color 0.2s, transform 0.15s', cursor: 'pointer',
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.transform = 'translateY(0)' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#444'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.transform = 'translateY(0)' }}
                     >
                       <div style={{
-                        width: '44px', height: '44px', borderRadius: '10px', flexShrink: 0,
-                        background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.15)',
+                        width: '48px', height: '48px', borderRadius: '10px', flexShrink: 0,
+                        background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '18px', color: '#c8ff00',
+                        fontSize: '20px', color: '#c8ff00',
                       }}>▶</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4', marginBottom: '6px' }}>
                           {r.title || 'Untitled reel'}
                         </div>
                         {r.skills?.length > 0 && (
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                             {r.skills.slice(0, 4).map(s => (
-                              <span key={s} style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid #222', color: '#666' }}>{s}</span>
+                              <span key={s} style={{ fontSize: '12px', padding: '2px 9px', borderRadius: '20px', background: 'rgba(255,255,255,0.06)', border: '1px solid #333', color: '#aaa' }}>{s}</span>
                             ))}
                           </div>
                         )}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#444', flexShrink: 0 }}>
+                      <div style={{ fontSize: '13px', color: '#666', flexShrink: 0 }}>
                         {r.visibility === 'private' ? '🔒 Private' : '🌐 Public'}
                       </div>
                     </div>
@@ -340,43 +322,43 @@ export default function ProfilePage() {
           {tab === 'projects' && (
             projects.length === 0
               ? <EmptyTab icon="🗂" text="No projects yet. Showcase your work to stand out." />
-              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
                 {projects.map(p => (
                   <div key={p.id} style={{
-                    background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: '12px',
-                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px',
+                    background: '#111', border: '1px solid #222', borderRadius: '12px',
+                    padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px',
                     transition: 'border-color 0.2s, transform 0.15s',
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.transform = 'translateY(0)' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.transform = 'translateY(0)' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4', lineHeight: 1.3 }}>{p.title}</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4', lineHeight: 1.35 }}>{p.title}</div>
                       {p.status && (
                         <span style={{
-                          fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', flexShrink: 0,
+                          fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px', flexShrink: 0,
                           textTransform: 'uppercase', letterSpacing: '0.06em',
-                          background: p.status === 'completed' ? 'rgba(200,255,0,0.1)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.1)' : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${p.status === 'completed' ? 'rgba(200,255,0,0.25)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.2)' : '#222'}`,
-                          color: p.status === 'completed' ? '#c8ff00' : p.status === 'in-progress' ? '#7090ff' : '#555',
+                          background: p.status === 'completed' ? 'rgba(200,255,0,0.1)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.1)' : 'rgba(255,255,255,0.06)',
+                          border: `1px solid ${p.status === 'completed' ? 'rgba(200,255,0,0.3)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.25)' : '#333'}`,
+                          color: p.status === 'completed' ? '#c8ff00' : p.status === 'in-progress' ? '#7090ff' : '#888',
                         }}>{p.status}</span>
                       )}
                     </div>
                     {p.description && (
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666', lineHeight: 1.55 }}>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#999', lineHeight: 1.6 }}>
                         {p.description.slice(0, 100)}{p.description.length > 100 ? '…' : ''}
                       </p>
                     )}
                     {p.skills?.length > 0 && (
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: 'auto' }}>
+                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: 'auto' }}>
                         {p.skills.slice(0, 3).map(s => (
-                          <span key={s} style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', background: 'rgba(255,255,255,0.04)', border: '1px solid #1e1e1e', color: '#666' }}>{s}</span>
+                          <span key={s} style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid #2a2a2a', color: '#aaa' }}>{s}</span>
                         ))}
                       </div>
                     )}
                     {p.demo_link && (
                       <a href={p.demo_link} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: '11px', color: '#c8ff00', textDecoration: 'none', fontWeight: 600 }}
+                        style={{ fontSize: '13px', color: '#c8ff00', textDecoration: 'none', fontWeight: 600 }}
                         onClick={e => e.stopPropagation()}>
                         🔗 View demo →
                       </a>
@@ -390,24 +372,17 @@ export default function ProfilePage() {
           {tab === 'assigned' && (
             assigned.length === 0
               ? <EmptyTab icon="📋" text="No projects assigned to you yet." />
-              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
                 {assigned.map(p => (
-                  <div key={p.id} style={{
-                    background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: '12px',
-                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px',
-                  }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#f0ece4' }}>{p.title}</div>
+                  <div key={p.id} style={{ background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>{p.title}</div>
                     {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name && (
-                      <div style={{ fontSize: '12px', color: '#555' }}>
+                      <div style={{ fontSize: '13px', color: '#888' }}>
                         {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.name}
                         {(p as unknown as { managers?: { name?: string; company?: string } }).managers?.company && ` · ${(p as unknown as { managers?: { name?: string; company?: string } }).managers?.company}`}
                       </div>
                     )}
-                    <span style={{
-                      alignSelf: 'flex-start', fontSize: '10px', fontWeight: 700, padding: '3px 9px',
-                      borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                      background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#a8d400',
-                    }}>{p.pay_type || 'tbd'}</span>
+                    <span style={{ alignSelf: 'flex-start', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00' }}>{p.pay_type || 'tbd'}</span>
                   </div>
                 ))}
               </div>
@@ -421,26 +396,22 @@ export default function ProfilePage() {
                 {visits.map((v, i) => (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '14px 16px', background: '#0f0f0f',
+                    padding: '16px 18px', background: '#111',
                     borderRadius: i === 0 ? '12px 12px 0 0' : i === visits.length - 1 ? '0 0 12px 12px' : '0',
-                    border: '1px solid #1a1a1a', borderTop: i === 0 ? '1px solid #1a1a1a' : 'none',
+                    border: '1px solid #222', borderTop: i === 0 ? '1px solid #222' : 'none',
                   }}>
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                      background: '#111', border: '1px solid #222',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px',
-                    }}>👔</div>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, background: '#1a1a1a', border: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👔</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0ece4' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 600, color: '#f0ece4' }}>
                         {(v as unknown as { managers?: { name?: string; company?: string } }).managers?.name || 'A manager'}
                       </div>
                       {(v as unknown as { managers?: { name?: string; company?: string } }).managers?.company && (
-                        <div style={{ fontSize: '11px', color: '#555', marginTop: '1px' }}>
+                        <div style={{ fontSize: '13px', color: '#888', marginTop: '2px' }}>
                           {(v as unknown as { managers?: { name?: string; company?: string } }).managers?.company}
                         </div>
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#444' }}>{v.viewed_at ? timeAgo(v.viewed_at) : ''}</div>
+                    <div style={{ fontSize: '13px', color: '#666' }}>{v.viewed_at ? timeAgo(v.viewed_at) : ''}</div>
                   </div>
                 ))}
               </div>
@@ -448,35 +419,21 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Edit modal */}
       {showEdit && profile && (
-        <EditProfileModal
-          profile={profile}
-          onClose={() => setShowEdit(false)}
-          onSaved={(p) => setProfile(p)}
-        />
+        <EditProfileModal profile={profile} onClose={() => setShowEdit(false)} onSaved={(p) => setProfile(p)} />
       )}
-
-      {/* Responsive: stack on mobile */}
-      <style>{`
-        @media (max-width: 680px) {
-          .profile-body { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   )
 }
-
-// ── Tiny helpers ──
 
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 function SideCard({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
   return (
     <div style={{
-      background: accent ? 'rgba(200,255,0,0.03)' : '#0f0f0f',
-      border: `1px solid ${accent ? 'rgba(200,255,0,0.12)' : '#1a1a1a'}`,
-      borderRadius: '12px', padding: '14px 16px',
+      background: accent ? 'rgba(200,255,0,0.04)' : '#111',
+      border: `1px solid ${accent ? 'rgba(200,255,0,0.15)' : '#222'}`,
+      borderRadius: '12px', padding: '16px 18px',
       display: 'flex', flexDirection: 'column', gap: '10px',
       marginBottom: '8px',
     }}>
@@ -487,16 +444,15 @@ function SideCard({ children, accent }: { children: React.ReactNode; accent?: bo
 
 function SideLabel({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
   return (
-    <div style={{
-      fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-      color: accent ? '#c8ff00' : '#444',
-    }}>{children}</div>
+    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent ? '#c8ff00' : '#666' }}>
+      {children}
+    </div>
   )
 }
 
 function Detail({ icon, label }: { icon: string; label: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#777' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#bbb' }}>
       <span>{icon}</span><span>{label}</span>
     </div>
   )
@@ -504,11 +460,7 @@ function Detail({ icon, label }: { icon: string; label: string }) {
 
 function SocialLink({ icon, label, url }: { icon: string; label: string; url: string }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" style={{
-      display: 'flex', alignItems: 'center', gap: '8px',
-      fontSize: '12px', color: '#c8ff00', textDecoration: 'none', fontWeight: 500,
-      transition: 'opacity 0.15s',
-    }}
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#c8ff00', textDecoration: 'none', fontWeight: 500 }}
       onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
       onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
     >
@@ -519,12 +471,9 @@ function SocialLink({ icon, label, url }: { icon: string; label: string; url: st
 
 function EmptyTab({ icon, text }: { icon: string; text: string }) {
   return (
-    <div style={{
-      textAlign: 'center', padding: '60px 20px',
-      background: '#0f0f0f', border: '1px dashed #1e1e1e', borderRadius: '12px',
-    }}>
-      <div style={{ fontSize: '28px', marginBottom: '10px' }}>{icon}</div>
-      <div style={{ fontSize: '13px', color: '#444', maxWidth: '260px', margin: '0 auto', lineHeight: 1.6 }}>{text}</div>
+    <div style={{ textAlign: 'center', padding: '64px 20px', background: '#111', border: '1px dashed #222', borderRadius: '12px' }}>
+      <div style={{ fontSize: '30px', marginBottom: '12px' }}>{icon}</div>
+      <div style={{ fontSize: '15px', color: '#666', maxWidth: '280px', margin: '0 auto', lineHeight: 1.65 }}>{text}</div>
     </div>
   )
 }
