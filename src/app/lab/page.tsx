@@ -41,7 +41,7 @@ export default function LabPage() {
 
   const sb = getClient()
 
-  useEffect(() => { loadData() }, [user])
+  useEffect(() => { loadData() }, [user, accountType])
 
   async function loadData() {
     setLoading(true)
@@ -54,7 +54,7 @@ export default function LabPage() {
     if (user) {
       const [mineRes, subRes] = await Promise.all([
         sb.from('individual_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        sb.from('project_submissions').select('*, manager_projects(title, pay_type, managers(name, company))').eq('individual_id', user.id).order('submitted_at', { ascending: false }),
+        sb.from('project_submissions').select('*, manager_projects(title, pay_type)').eq('individual_id', user.id).order('submitted_at', { ascending: false }),
       ])
       setMyProjects((mineRes.data || []) as IndividualProject[])
       setMySubmissions((subRes.data || []) as ProjectSubmission[])
@@ -137,9 +137,30 @@ export default function LabPage() {
       ) : tab === 'browse' ? (
         <>
           {openProjects.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#555', padding: '60px 0', fontSize: '14px' }}>No open projects right now.</div>
+            <>
+          {accountType === 'manager' && (
+            <div style={{ background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.2)', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00', marginBottom: '2px' }}>You are logged in as a Manager</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Post and manage projects from your Dashboard.</div>
+              </div>
+              <a href="/dashboard" style={{ padding: '8px 16px', background: '#c8ff00', color: '#0a0a0a', borderRadius: '8px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>Go to Dashboard →</a>
+            </div>
+          )}
+          <div style={{ textAlign: 'center', color: '#555', padding: '60px 0', fontSize: '14px' }}>No open projects right now.</div>
+        </>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <>
+              {accountType === 'manager' && (
+                <div style={{ background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.2)', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#c8ff00', marginBottom: '2px' }}>You are logged in as a Manager</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>Post and manage your projects from the Dashboard.</div>
+                  </div>
+                  <a href="/dashboard" style={{ padding: '8px 16px', background: '#c8ff00', color: '#0a0a0a', borderRadius: '8px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>Go to Dashboard →</a>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {openProjects.map(p => {
                 const submitted = alreadySubmitted(p.id)
                 const mgr = p.managers as { name?: string; company?: string } | undefined
@@ -248,7 +269,7 @@ export default function LabPage() {
                 <div key={s.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '3px' }}>{proj?.title || 'Project'}</div>
-                    {proj?.managers && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>👔 {proj.managers.name}{proj.managers.company ? ` · ${proj.managers.company}` : ''}</div>}
+                    {proj?.title && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>📋 {proj.title}</div>}
                     {s.note && <div style={{ fontSize: '13px', color: '#777', marginBottom: '6px' }}>{s.note}</div>}
                     {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 View submission</a>}
                     <div style={{ fontSize: '11px', color: '#444', marginTop: '6px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>

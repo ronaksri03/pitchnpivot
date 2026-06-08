@@ -22,7 +22,7 @@ function timeAgo(ts: string) {
 type Tab = 'reels' | 'projects' | 'assigned' | 'visitors'
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, accountType, loading: authLoading } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [reels, setReels] = useState<Reel[]>([])
@@ -36,8 +36,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/auth')
-    if (user) loadAll()
-  }, [authLoading, user])
+    if (!authLoading && user && accountType === 'manager') router.replace('/dashboard')
+    if (!authLoading && user && accountType !== 'manager') loadAll()
+  }, [authLoading, user, accountType])
 
   async function loadAll() {
     if (!user) return

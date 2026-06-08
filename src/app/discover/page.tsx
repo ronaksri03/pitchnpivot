@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { Profile } from '@/types'
+import { useAuth } from '@/context/AuthContext'
 import { COMMUNITY_SKILLS, COMMUNITY_NAMES } from '@/lib/communities'
 import ProfileModal from '@/components/ProfileModal'
 import { Suspense } from 'react'
@@ -39,6 +40,7 @@ function DiscoverContent() {
   const searchParams = useSearchParams()
   const communityTag = searchParams.get('community')
 
+  const { user, accountType } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [search, setSearch] = useState('')
   const [openOnly, setOpenOnly] = useState(false)
@@ -128,7 +130,7 @@ function DiscoverContent() {
             const name = [(p.first_name || ''), (p.last_name || '')].join(' ').trim() || p.username || 'Anonymous'
             const role = [p.job_title, p.location].filter(Boolean).join(' · ')
             return (
-              <div key={p.id} className="vcard" onClick={() => setSelectedId(p.id)}>
+              <div key={p.id} className="vcard" onClick={() => user ? setSelectedId(p.id) : window.location.href = '/auth'}>
                 <div className="vcard-art" style={{ background: gradientFor(p.skills || []) }}>
                   {emojiFor(p.skills || [])}
                 </div>

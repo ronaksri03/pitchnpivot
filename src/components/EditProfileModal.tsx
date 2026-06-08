@@ -17,6 +17,8 @@ interface Props {
 export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
   const sb = getClient()
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [error, setError] = useState('')
   const [skillInput, setSkillInput] = useState('')
 
