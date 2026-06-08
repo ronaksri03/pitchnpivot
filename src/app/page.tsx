@@ -123,26 +123,22 @@ export default function HomePage() {
         }}>
           Communities
         </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-          gap: '10px',
-        }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {COMMUNITIES.map(tag => (
             <Link
               key={tag}
               href={`/discover?community=${encodeURIComponent(tag)}`}
               style={{
                 background: '#0f0f0f', border: '1px solid #1e1e1e',
-                borderRadius: '12px', padding: '16px',
-                textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: '8px',
-                transition: 'border-color 0.2s',
+                borderRadius: '8px', padding: '8px 14px',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '7px',
+                transition: 'border-color 0.2s, background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#333')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.background = '#141414' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.background = '#0f0f0f' }}
             >
-              <span style={{ fontSize: '24px' }}>{COMMUNITY_EMOJI[tag]}</span>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#f0ece4' }}>
+              <span style={{ fontSize: '16px', lineHeight: 1 }}>{COMMUNITY_EMOJI[tag]}</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap' }}>
                 {COMMUNITY_NAMES[tag]}
               </span>
             </Link>
