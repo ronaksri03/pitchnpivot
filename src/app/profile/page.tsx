@@ -41,16 +41,32 @@ export default function ProfilePage() {
 
   async function loadAll() {
     if (!user) return
-    const [profRes, reelRes, projRes, assignedRes] = await Promise.all([
+    const [profRes, reelRes, projRes] = await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).single(),
       sb.from('reels').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       sb.from('individual_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      sb.from('manager_projects').select('*, managers(name, company)').eq('assigned_to', user.id).order('created_at', { ascending: false }),
     ])
     setProfile(profRes.data)
     setReels(reelRes.data || [])
     setProjects(projRes.data || [])
-    setAssigned(assignedRes.data || [])
+
+    // Fetch assigned projects — try with managers join, fall back to plain
+    const { data: assignedWithMgr, error: assignedErr } = await sb
+      .from('manager_projects')
+      .select('*, managers(name, company)')
+      .eq('assigned_to', user.id)
+      .order('created_at', { ascending: false })
+    if (!assignedErr) {
+      setAssigned(assignedWithMgr || [])
+    } else {
+      console.warn('[assigned join error]', assignedErr.message)
+      const { data: assignedPlain } = await sb
+        .from('manager_projects')
+        .select('*')
+        .eq('assigned_to', user.id)
+        .order('created_at', { ascending: false })
+      setAssigned(assignedPlain || [])
+    }
 
     // Fetch visits — try with managers join first, fall back to plain select
     const { data: visitsWithMgr, error: visitsErr } = await sb
