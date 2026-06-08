@@ -27,7 +27,6 @@ export default function LabPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [timeline, setTimeline] = useState('')
-  const [payType, setPayType] = useState('paid')
   const [skillInput, setSkillInput] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
@@ -45,11 +44,19 @@ export default function LabPage() {
 
   async function loadData() {
     setLoading(true)
-    const { data } = await sb.from('manager_projects')
+    const { data, error: projErr } = await sb.from('manager_projects')
       .select('*, managers(name, company)')
       .eq('visibility', 'public').eq('status', 'open')
       .order('created_at', { ascending: false }).limit(50)
-    setOpenProjects((data || []) as ManagerProject[])
+    if (!projErr) {
+      setOpenProjects((data || []) as ManagerProject[])
+    } else {
+      console.warn('[lab open projects join error]', projErr.message, '— falling back')
+      const { data: plain } = await sb.from('manager_projects')
+        .select('*').eq('visibility', 'public').eq('status', 'open')
+        .order('created_at', { ascending: false }).limit(50)
+      setOpenProjects((plain || []) as ManagerProject[])
+    }
 
     if (user) {
       const [mineRes, subRes] = await Promise.all([
@@ -186,7 +193,9 @@ export default function LabPage() {
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00' }}>
                           {PAY_LABEL[p.pay_type || ''] || '❓'}
                         </span>
-                        {user && (accountType === 'individual' || !accountType) && (
+                        {!user ? (
+                          <a href="/auth" style={{ padding: '7px 14px', background: '#1a1a1a', color: '#c8ff00', border: '1px solid rgba(200,255,0,0.25)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>Sign in to submit →</a>
+                        ) : (accountType === 'individual') ? (
                           submitted ? (
                             <span style={{ fontSize: '12px', color: '#c8ff00', fontWeight: 600 }}>✓ Submitted</span>
                           ) : (
@@ -195,7 +204,7 @@ export default function LabPage() {
                               Submit Work →
                             </button>
                           )
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -213,16 +222,7 @@ export default function LabPage() {
             <form onSubmit={postIndProject} style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '18px', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input style={inp} placeholder="Project title" value={title} onChange={e => setTitle(e.target.value)} required />
               <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input style={{ ...inp, flex: 1 }} placeholder="Timeline" value={timeline} onChange={e => setTimeline(e.target.value)} />
-                <select style={{ ...inp, flex: 1 }} value={payType} onChange={e => setPayType(e.target.value)}>
-                  <option value="paid">💰 Paid</option>
-                  <option value="bounty">🏆 Bounty</option>
-                  <option value="equity">📈 Equity</option>
-                  <option value="unpaid">🤝 Unpaid</option>
-                  <option value="tbd">❓ TBD</option>
-                </select>
-              </div>
+              <input style={inp} placeholder="Timeline (e.g. 2 weeks)" value={timeline} onChange={e => setTimeline(e.target.value)} />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
@@ -268,8 +268,8 @@ export default function LabPage() {
               return (
                 <div key={s.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '3px' }}>{proj?.title || 'Project'}</div>
-                    {proj?.title && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>📋 {proj.title}</div>}
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '6px' }}>{proj?.title || 'Project'}</div>
+                    {proj?.pay_type && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>{proj.pay_type === 'paid' ? '💰 Paid' : proj.pay_type === 'bounty' ? '🏆 Bounty' : proj.pay_type === 'equity' ? '📈 Equity' : proj.pay_type === 'unpaid' ? '🤝 Unpaid' : '❓ TBD'}</div>}
                     {s.note && <div style={{ fontSize: '13px', color: '#777', marginBottom: '6px' }}>{s.note}</div>}
                     {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 View submission</a>}
                     <div style={{ fontSize: '11px', color: '#444', marginTop: '6px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>

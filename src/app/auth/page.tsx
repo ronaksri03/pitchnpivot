@@ -120,8 +120,8 @@ export default function AuthPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Account type dropdown — always shown */}
-          <div>
+          {/* Account type dropdown — only shown on signup */}
+          {isSignup && <div>
             <label style={label}>I am a</label>
             <div style={{ position: 'relative' }}>
               <select
@@ -133,7 +133,7 @@ export default function AuthPage() {
                 <option value="manager">Manager — hiring or posting projects</option>
               </select>
             </div>
-          </div>
+          </div>}
 
           {/* Signup-only fields */}
           {isSignup && (

@@ -65,6 +65,13 @@ export default function ProfileModal({ profileId, onClose }: Props) {
           if (viewErr) console.error('[profile_views insert error]', viewErr.message, viewErr.code, viewErr.details)
           else console.log('[profile_views] view recorded successfully')
         }
+        // Load manager's own projects for the assign-project dropdown
+        const { data: mgrProjs } = await sb.from('manager_projects')
+          .select('id, title')
+          .eq('manager_id', user.id)
+          .neq('status', 'closed')
+          .order('created_at', { ascending: false })
+        setMyProjects((mgrProjs || []) as ManagerProject[])
       }
     }
     load()
