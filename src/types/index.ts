@@ -80,3 +80,14 @@ export interface ProfileView {
 }
 
 export type AccountType = 'individual' | 'manager'
+
+export interface ProjectSubmission {
+  id: string
+  project_id: string
+  individual_id: string
+  submission_url: string | null
+  note: string | null
+  submitted_at: string
+  status: 'pending' | 'accepted' | 'rejected'
+  profiles?: Pick<Profile, 'first_name' | 'last_name' | 'username' | 'job_title'>
+}

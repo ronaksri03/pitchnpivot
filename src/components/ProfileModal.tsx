@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { getClient } from '@/lib/supabase'
-import { Profile, Reel, IndividualProject } from '@/types'
+import { useAuth } from '@/context/AuthContext'
+import { Profile, Reel, IndividualProject, ManagerProject } from '@/types'
 
 interface Props {
   profileId: string
@@ -29,6 +30,11 @@ export default function ProfileModal({ profileId, onClose }: Props) {
   const [reels, setReels] = useState<Reel[]>([])
   const [projects, setProjects] = useState<IndividualProject[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAssign, setShowAssign] = useState(false)
+  const [myProjects, setMyProjects] = useState<ManagerProject[]>([])
+  const [assigningId, setAssigningId] = useState<string | null>(null)
+  const [assignDone, setAssignDone] = useState(false)
+  const { user, accountType } = useAuth()
   const sb = getClient()
 
   useEffect(() => {
@@ -77,6 +83,38 @@ export default function ProfileModal({ profileId, onClose }: Props) {
           borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer',
           fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>✕</button>
+        {(accountType === 'manager') && !loading && p && (
+          <div style={{ position: 'absolute', top: '16px', left: '16px' }}>
+            {!showAssign ? (
+              <button onClick={() => setShowAssign(true)} style={{ padding: '5px 12px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: '#c8ff00', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                + Assign Project
+              </button>
+            ) : (
+              <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '12px', minWidth: '240px' }}>
+                <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: 600 }}>Assign to {name.split(' ')[0]}</div>
+                {assignDone ? (
+                  <div style={{ color: '#c8ff00', fontSize: '13px', fontWeight: 600 }}>✓ Assigned!</div>
+                ) : myProjects.length === 0 ? (
+                  <div style={{ color: '#555', fontSize: '12px' }}>No open projects. Create one in Dashboard.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {myProjects.map(proj => (
+                      <button key={proj.id} disabled={assigningId === proj.id} onClick={async () => {
+                        setAssigningId(proj.id)
+                        await sb.from('manager_projects').update({ assigned_to: profileId, visibility: 'private' }).eq('id', proj.id)
+                        setAssignDone(true)
+                        setTimeout(() => { setShowAssign(false); setAssignDone(false); setAssigningId(null) }, 1500)
+                      }} style={{ padding: '7px 10px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', textAlign: 'left', fontWeight: 500 }}>
+                        {assigningId === proj.id ? 'Assigning…' : proj.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => setShowAssign(false)} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '11px' }}>Cancel</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#555' }}>Loading…</div>

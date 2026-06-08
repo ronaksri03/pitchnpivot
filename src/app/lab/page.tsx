@@ -3,20 +3,26 @@
 import { useEffect, useState } from 'react'
 import { getClient } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { ManagerProject, IndividualProject } from '@/types'
+import { ManagerProject, IndividualProject, ProjectSubmission } from '@/types'
 
 const PAY_LABEL: Record<string, string> = {
   paid: '💰 Paid', bounty: '🏆 Bounty', equity: '📈 Equity', unpaid: '🤝 Unpaid', tbd: '❓ TBD',
+}
+
+const inp: React.CSSProperties = {
+  width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a',
+  borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
 }
 
 export default function LabPage() {
   const { user, accountType } = useAuth()
   const [openProjects, setOpenProjects] = useState<ManagerProject[]>([])
   const [myProjects, setMyProjects] = useState<IndividualProject[]>([])
-  const [tab, setTab] = useState<'browse' | 'mine'>('browse')
+  const [mySubmissions, setMySubmissions] = useState<ProjectSubmission[]>([])
+  const [tab, setTab] = useState<'browse' | 'mine' | 'submitted'>('browse')
   const [loading, setLoading] = useState(true)
 
-  // Post project form state
+  // Individual own project form
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -26,22 +32,32 @@ export default function LabPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
 
+  // Submit work modal
+  const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
+  const [submitUrl, setSubmitUrl] = useState('')
+  const [submitNote, setSubmitNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
   const sb = getClient()
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [user])
 
   async function loadData() {
     setLoading(true)
     const { data } = await sb.from('manager_projects')
       .select('*, managers(name, company)')
       .eq('visibility', 'public').eq('status', 'open')
-      .order('created_at', { ascending: false }).limit(20)
+      .order('created_at', { ascending: false }).limit(50)
     setOpenProjects((data || []) as ManagerProject[])
 
-    if (user && accountType === 'individual') {
-      const { data: mine } = await sb.from('individual_projects')
-        .select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-      setMyProjects((mine || []) as IndividualProject[])
+    if (user) {
+      const [mineRes, subRes] = await Promise.all([
+        sb.from('individual_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        sb.from('project_submissions').select('*, manager_projects(title, pay_type, managers(name, company))').eq('individual_id', user.id).order('submitted_at', { ascending: false }),
+      ])
+      setMyProjects((mineRes.data || []) as IndividualProject[])
+      setMySubmissions((subRes.data || []) as ProjectSubmission[])
     }
     setLoading(false)
   }
@@ -51,122 +67,235 @@ export default function LabPage() {
     if (!user) return
     setPosting(true)
     await sb.from('individual_projects').insert({
-      user_id: user.id, title, description,
+      user_id: user.id, title, description, timeline,
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
     })
-    setShowForm(false); setTitle(''); setDescription(''); setSkills([])
+    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setSkills([])
     await loadData()
     setPosting(false)
   }
 
-  function addSkill(s: string) {
-    const t = s.trim()
-    if (t && !skills.includes(t)) setSkills(prev => [...prev, t])
-    setSkillInput('')
+  async function submitWork(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || !submitProject) return
+    setSubmitting(true); setSubmitError('')
+    const { error } = await sb.from('project_submissions').insert({
+      project_id: submitProject.id,
+      individual_id: user.id,
+      submission_url: submitUrl || null,
+      note: submitNote || null,
+    })
+    if (error) {
+      setSubmitError(error.code === '23505' ? 'You already submitted work for this project.' : error.message)
+    } else {
+      setSubmitProject(null); setSubmitUrl(''); setSubmitNote('')
+      await loadData()
+    }
+    setSubmitting(false)
   }
 
+  const alreadySubmitted = (projectId: string) =>
+    mySubmissions.some(s => s.project_id === projectId)
+
+  const tabs = [
+    { key: 'browse', label: 'Open Projects', count: openProjects.length },
+    ...(accountType === 'individual' || !accountType ? [
+      { key: 'mine', label: 'My Projects', count: myProjects.length },
+      { key: 'submitted', label: 'Submitted', count: mySubmissions.length },
+    ] : []),
+  ] as { key: string; label: string; count: number }[]
+
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f0ece4', margin: 0 }}>Project Lab</h1>
-        {user && accountType === 'individual' && (
-          <button className="btn-primary" onClick={() => setShowForm(s => !s)}>
-            {showForm ? 'Cancel' : '+ Post a project'}
-          </button>
-        )}
+    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Project Lab</div>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f0ece4', margin: 0 }}>Find work. Build things.</h1>
+        <p style={{ fontSize: '14px', color: '#666', marginTop: '6px' }}>Browse open projects from managers or post your own.</p>
       </div>
 
-      {/* Post project form (individuals) */}
-      {showForm && (
-        <form onSubmit={postIndProject} style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>Post a project</h3>
-          <input className="inp" placeholder="Project title" value={title} onChange={e => setTitle(e.target.value)} required />
-          <textarea className="inp" placeholder="What did you build? What problem does it solve?" value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input className="inp" placeholder="Add skill, press Enter" value={skillInput}
-              onChange={e => setSkillInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(skillInput) } }}
-            />
-            <button type="button" className="btn-primary" onClick={() => addSkill(skillInput)}>Add</button>
-          </div>
-          {skills.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {skills.map(s => (
-                <span key={s} className="vtag" style={{ cursor: 'pointer' }} onClick={() => setSkills(prev => prev.filter(x => x !== s))}>
-                  {s} ✕
-                </span>
-              ))}
-            </div>
-          )}
-          <button className="btn-primary" type="submit" disabled={posting}>{posting ? 'Posting…' : 'Post project'}</button>
-        </form>
-      )}
-
       {/* Tabs */}
-      {user && accountType === 'individual' && (
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '20px' }}>
-          {(['browse', 'mine'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{
-              padding: '7px 16px', borderRadius: '8px', border: '1px solid',
-              fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-              borderColor: tab === t ? '#c8ff00' : '#2a2a2a',
-              background: tab === t ? 'rgba(200,255,0,0.1)' : 'transparent',
-              color: tab === t ? '#c8ff00' : '#555',
-            }}>
-              {t === 'browse' ? '🔍 Browse projects' : '📁 My projects'}
-            </button>
-          ))}
-        </div>
-      )}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', borderBottom: '1px solid #1a1a1a', paddingBottom: '0' }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key as never)} style={{
+            padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '13px', fontWeight: 600,
+            color: tab === t.key ? '#f0ece4' : '#555',
+            borderBottom: tab === t.key ? '2px solid #c8ff00' : '2px solid transparent',
+            marginBottom: '-1px', transition: 'color 0.15s',
+          }}>
+            {t.label}
+            <span style={{ marginLeft: '6px', fontSize: '11px', color: tab === t.key ? '#c8ff00' : '#444', fontWeight: 700 }}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
 
-      {loading ? <div className="empty-state">Loading…</div> : (
-        tab === 'browse' || accountType === 'manager' ? (
-          openProjects.length === 0 ? (
-            <div className="empty-state">No open projects yet.</div>
+      {loading ? (
+        <div style={{ textAlign: 'center', color: '#555', padding: '40px' }}>Loading…</div>
+      ) : tab === 'browse' ? (
+        <>
+          {openProjects.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#555', padding: '60px 0', fontSize: '14px' }}>No open projects right now.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {openProjects.map(p => (
-                <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px 18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '15px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
-                      <div style={{ fontSize: '12px', color: '#555' }}>
-                        {p.managers?.name && `👔 ${p.managers.name}${p.managers.company ? ` · ${p.managers.company}` : ''}`}
-                        {p.timeline && ` · ⏱ ${p.timeline}`}
+              {openProjects.map(p => {
+                const submitted = alreadySubmitted(p.id)
+                const mgr = p.managers as { name?: string; company?: string } | undefined
+                return (
+                  <div key={p.id} style={{ background: '#0f0f0f', border: `1px solid ${submitted ? 'rgba(200,255,0,0.2)' : '#1e1e1e'}`, borderRadius: '12px', padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
+                        {mgr?.name && (
+                          <div style={{ fontSize: '12px', color: '#555', marginBottom: '8px' }}>
+                            👔 {mgr.name}{mgr.company ? ` · ${mgr.company}` : ''}
+                          </div>
+                        )}
+                        {p.description && <p style={{ fontSize: '13px', color: '#888', margin: '0 0 10px', lineHeight: 1.6 }}>{p.description}</p>}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                          {p.skills_required?.slice(0, 5).map(s => (
+                            <span key={s} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>
+                          ))}
+                          {p.timeline && <span style={{ fontSize: '11px', color: '#555' }}>⏱ {p.timeline}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00' }}>
+                          {PAY_LABEL[p.pay_type || ''] || '❓'}
+                        </span>
+                        {user && (accountType === 'individual' || !accountType) && (
+                          submitted ? (
+                            <span style={{ fontSize: '12px', color: '#c8ff00', fontWeight: 600 }}>✓ Submitted</span>
+                          ) : (
+                            <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitError('') }}
+                              style={{ padding: '7px 14px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                              Submit Work →
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00', whiteSpace: 'nowrap' }}>
-                      {PAY_LABEL[p.pay_type || ''] || p.pay_type}
-                    </span>
                   </div>
-                  {p.description && <p style={{ fontSize: '13px', color: '#666', margin: '10px 0 0', lineHeight: 1.6 }}>{p.description}</p>}
-                  {p.skills_required?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '10px' }}>
-                      {p.skills_required.map(s => <span key={s} className="vtag" style={{ fontSize: '11px' }}>{s}</span>)}
+                )
+              })}
+            </div>
+          )}
+        </>
+      ) : tab === 'mine' ? (
+        <>
+          <button onClick={() => setShowForm(s => !s)} style={{ padding: '8px 16px', background: showForm ? '#1a1a1a' : '#c8ff00', color: showForm ? '#888' : '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', marginBottom: '16px' }}>
+            {showForm ? 'Cancel' : '+ Add my project'}
+          </button>
+          {showForm && (
+            <form onSubmit={postIndProject} style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '18px', marginBottom: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input style={inp} placeholder="Project title" value={title} onChange={e => setTitle(e.target.value)} required />
+              <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input style={{ ...inp, flex: 1 }} placeholder="Timeline" value={timeline} onChange={e => setTimeline(e.target.value)} />
+                <select style={{ ...inp, flex: 1 }} value={payType} onChange={e => setPayType(e.target.value)}>
+                  <option value="paid">💰 Paid</option>
+                  <option value="bounty">🏆 Bounty</option>
+                  <option value="equity">📈 Equity</option>
+                  <option value="unpaid">🤝 Unpaid</option>
+                  <option value="tbd">❓ TBD</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
+                <button type="button" onClick={() => { if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') }}
+                  style={{ padding: '8px 14px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Add</button>
+              </div>
+              {skills.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {skills.map(s => <span key={s} onClick={() => setSkills(p => p.filter(x => x !== s))} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#c8ff00', cursor: 'pointer' }}>{s} ✕</span>)}
+                </div>
+              )}
+              <button type="submit" disabled={posting} style={{ padding: '10px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                {posting ? 'Posting…' : 'Post project'}
+              </button>
+            </form>
+          )}
+          {myProjects.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#555', padding: '40px', fontSize: '14px' }}>No projects yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {myProjects.map(p => (
+                <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
+                  {p.description && <div style={{ fontSize: '13px', color: '#777', marginBottom: '8px' }}>{p.description}</div>}
+                  {p.skills?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      {p.skills.map(s => <span key={s} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>)}
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          )
+          )}
+        </>
+      ) : (
+        // Submitted tab
+        mySubmissions.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#555', padding: '40px', fontSize: '14px' }}>No submissions yet. Browse open projects to submit work.</div>
         ) : (
-          myProjects.length === 0 ? (
-            <div className="empty-state">No projects yet. Post one above!</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '12px' }}>
-              {myProjects.map(p => (
-                <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '6px' }}>{p.title}</div>
-                  {p.description && <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.5, marginBottom: '8px' }}>{p.description}</div>}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {p.skills?.slice(0, 3).map(s => <span key={s} className="vtag" style={{ fontSize: '10px' }}>{s}</span>)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {mySubmissions.map(s => {
+              const proj = (s as unknown as { manager_projects?: { title?: string; pay_type?: string; managers?: { name?: string; company?: string } } }).manager_projects
+              return (
+                <div key={s.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '3px' }}>{proj?.title || 'Project'}</div>
+                    {proj?.managers && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>👔 {proj.managers.name}{proj.managers.company ? ` · ${proj.managers.company}` : ''}</div>}
+                    {s.note && <div style={{ fontSize: '13px', color: '#777', marginBottom: '6px' }}>{s.note}</div>}
+                    {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 View submission</a>}
+                    <div style={{ fontSize: '11px', color: '#444', marginTop: '6px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
                   </div>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap',
+                    background: s.status === 'accepted' ? 'rgba(200,255,0,0.1)' : s.status === 'rejected' ? 'rgba(255,100,100,0.1)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${s.status === 'accepted' ? 'rgba(200,255,0,0.3)' : s.status === 'rejected' ? 'rgba(255,100,100,0.3)' : '#2a2a2a'}`,
+                    color: s.status === 'accepted' ? '#c8ff00' : s.status === 'rejected' ? '#ff6b6b' : '#666',
+                  }}>
+                    {s.status === 'accepted' ? '✓ Accepted' : s.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )
+              )
+            })}
+          </div>
         )
+      )}
+
+      {/* Submit Work Modal */}
+      {submitProject && (
+        <div onClick={e => e.target === e.currentTarget && setSubmitProject(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+          <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: '#555', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Submit Work</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0ece4', marginTop: '2px' }}>{submitProject.title}</div>
+              </div>
+              <button onClick={() => setSubmitProject(null)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+            </div>
+            <form onSubmit={submitWork} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Submission link</label>
+                <input style={inp} placeholder="https://github.com/you/project" value={submitUrl} onChange={e => setSubmitUrl(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Note to manager <span style={{ color: '#444' }}>(optional)</span></label>
+                <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Describe what you built…" rows={3} value={submitNote} onChange={e => setSubmitNote(e.target.value)} />
+              </div>
+              {submitError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{submitError}</div>}
+              <button type="submit" disabled={submitting} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                {submitting ? 'Submitting…' : 'Submit Work →'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
