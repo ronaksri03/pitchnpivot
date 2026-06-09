@@ -34,6 +34,17 @@ export default function LabPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState('')
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editTimeline, setEditTimeline] = useState('')
+  const [editDemoUrl, setEditDemoUrl] = useState('')
+  const [editGithubUrl, setEditGithubUrl] = useState('')
+  const [editVideoUrl, setEditVideoUrl] = useState('')
+  const [editSkills, setEditSkills] = useState<string[]>([])
+  const [editSkillInput, setEditSkillInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Submit work modal
   const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
@@ -104,6 +115,37 @@ export default function LabPage() {
       setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
     }
     setPosting(false)
+  }
+
+  function openEdit(p: IndividualProject) {
+    setEditId(p.id); setEditTitle(p.title); setEditDesc(p.description || '')
+    setEditTimeline(p.timeline || ''); setEditDemoUrl(p.demo_link || '')
+    setEditGithubUrl(p.github_url || ''); setEditVideoUrl(p.video_url || '')
+    setEditSkills(p.skills || []); setEditSkillInput(''); setSaveError('')
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editId) return
+    setSaving(true); setSaveError('')
+    const { error } = await sb.from('individual_projects').update({
+      title: editTitle, description: editDesc || null,
+      timeline: editTimeline || null, demo_link: editDemoUrl || null,
+      github_url: editGithubUrl || null, video_url: editVideoUrl || null,
+      skills: editSkills,
+    }).eq('id', editId)
+    if (error) {
+      setSaveError(error.message)
+    } else {
+      setMyProjects(prev => prev.map(p => p.id === editId ? {
+        ...p, title: editTitle, description: editDesc || null,
+        timeline: editTimeline || null, demo_link: editDemoUrl || null,
+        github_url: editGithubUrl || null, video_url: editVideoUrl || null,
+        skills: editSkills,
+      } : p))
+      setEditId(null)
+    }
+    setSaving(false)
   }
 
   async function submitWork(e: React.FormEvent) {
@@ -277,7 +319,10 @@ export default function LabPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {myProjects.map(p => (
                 <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4' }}>{p.title}</div>
+                    <button onClick={() => openEdit(p)} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', borderRadius: '6px', padding: '3px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>✎ Edit</button>
+                  </div>
                   {p.description && <div style={{ fontSize: '13px', color: '#777', marginBottom: '8px' }}>{p.description}</div>}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: p.skills?.length > 0 || p.video_url ? '8px' : '0' }}>
                     {p.demo_link && <a href={p.demo_link} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 Live demo</a>}
@@ -325,6 +370,43 @@ export default function LabPage() {
             })}
           </div>
         )
+      )}
+
+      {/* Edit Individual Project Modal */}
+      {editId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+          <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0ece4' }}>Edit project</div>
+              <button onClick={() => setEditId(null)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+            </div>
+            <form onSubmit={saveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input style={inp} placeholder="Project title *" value={editTitle} onChange={e => setEditTitle(e.target.value)} required />
+              <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
+              <input style={inp} placeholder="Timeline (e.g. 2 weeks)" value={editTimeline} onChange={e => setEditTimeline(e.target.value)} />
+              <input style={inp} placeholder="Video URL (Loom, YouTube, etc.)" value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <input style={inp} placeholder="Live URL / Demo link" value={editDemoUrl} onChange={e => setEditDemoUrl(e.target.value)} />
+                <input style={inp} placeholder="GitHub URL" value={editGithubUrl} onChange={e => setEditGithubUrl(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={editSkillInput} onChange={e => setEditSkillInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (editSkillInput.trim() && !editSkills.includes(editSkillInput.trim())) setEditSkills(p => [...p, editSkillInput.trim()]); setEditSkillInput('') } }} />
+                <button type="button" onClick={() => { if (editSkillInput.trim() && !editSkills.includes(editSkillInput.trim())) setEditSkills(p => [...p, editSkillInput.trim()]); setEditSkillInput('') }}
+                  style={{ padding: '8px 14px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Add</button>
+              </div>
+              {editSkills.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {editSkills.map(s => <span key={s} onClick={() => setEditSkills(p => p.filter(x => x !== s))} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#c8ff00', cursor: 'pointer' }}>{s} ✕</span>)}
+                </div>
+              )}
+              {saveError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{saveError}</div>}
+              <button type="submit" disabled={saving} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Submit Work Modal */}
