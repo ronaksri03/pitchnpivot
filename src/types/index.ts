@@ -57,6 +57,7 @@ export interface IndividualProject {
   status: 'completed' | 'in-progress' | 'idea' | null
   skills: string[]
   demo_link: string | null
+  github_url: string | null
   video_url: string | null
   visibility: 'public' | 'private'
   created_at: string

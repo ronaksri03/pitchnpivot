@@ -28,6 +28,8 @@ export default function LabPage() {
   const [description, setDescription] = useState('')
   const [timeline, setTimeline] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [demoUrl, setDemoUrl] = useState('')
+  const [githubUrl, setGithubUrl] = useState('')
   const [skillInput, setSkillInput] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
@@ -77,11 +79,13 @@ export default function LabPage() {
     setPosting(true)
     await sb.from('individual_projects').insert({
       user_id: user.id, title, description, timeline,
+      demo_link: demoUrl || null,
+      github_url: githubUrl || null,
       video_url: videoUrl || null,
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
     })
-    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setSkills([])
+    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
     await loadData()
     setPosting(false)
   }
@@ -230,6 +234,10 @@ export default function LabPage() {
               <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
               <input style={inp} placeholder="Timeline (e.g. 2 weeks)" value={timeline} onChange={e => setTimeline(e.target.value)} />
               <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <input style={inp} placeholder="Live URL / Demo link" value={demoUrl} onChange={e => setDemoUrl(e.target.value)} />
+                <input style={inp} placeholder="GitHub URL" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} />
+              </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
@@ -254,7 +262,11 @@ export default function LabPage() {
                 <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
                   {p.description && <div style={{ fontSize: '13px', color: '#777', marginBottom: '8px' }}>{p.description}</div>}
-                  {p.video_url && <a href={p.video_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginBottom: '8px' }}>▶ Watch video</a>}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: p.skills?.length > 0 || p.video_url ? '8px' : '0' }}>
+                    {p.demo_link && <a href={p.demo_link} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 Live demo</a>}
+                    {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#aaa', textDecoration: 'none' }}>⌥ GitHub</a>}
+                    {p.video_url && <a href={p.video_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>▶ Video</a>}
+                  </div>
                   {p.skills?.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                       {p.skills.map(s => <span key={s} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>)}
