@@ -211,6 +211,7 @@ export default function LabPage() {
                 )
               })}
             </div>
+            </>
           )}
         </>
       ) : tab === 'mine' ? (

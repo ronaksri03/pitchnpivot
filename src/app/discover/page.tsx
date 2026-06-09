@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { Profile } from '@/types'
 import { useAuth } from '@/context/AuthContext'
@@ -40,13 +40,21 @@ function DiscoverContent() {
   const searchParams = useSearchParams()
   const communityTag = searchParams.get('community')
 
-  const { user, accountType } = useAuth()
+  const { user, accountType, loading: authLoading } = useAuth()
+  const router = useRouter()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [search, setSearch] = useState('')
   const [openOnly, setOpenOnly] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const sb = getClient()
+
+  // Managers are redirected — discover is for individuals
+  useEffect(() => {
+    if (!authLoading && accountType === 'manager') {
+      router.replace('/dashboard')
+    }
+  }, [authLoading, accountType, router])
 
   const loadProfiles = useCallback(async () => {
     setLoading(true)

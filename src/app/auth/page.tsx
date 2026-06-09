@@ -80,6 +80,14 @@ export default function AuthPage() {
         const { data, error: err } = await sb.auth.signInWithPassword({ email, password })
         if (err) throw err
         const acct = data.user?.user_metadata?.account_type
+        if (acct && acct !== accountType) {
+          await sb.auth.signOut()
+          throw new Error(
+            acct === 'manager'
+              ? 'This is a manager account. Please select \'Manager\' to sign in.'
+              : 'This is an individual account. Please select \'Individual\' to sign in.'
+          )
+        }
         router.replace(acct === 'manager' ? '/dashboard' : '/profile')
       }
     } catch (err: unknown) {
@@ -120,9 +128,9 @@ export default function AuthPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Account type dropdown — only shown on signup */}
-          {isSignup && <div>
-            <label style={label}>I am a</label>
+          {/* Account type selector — shown on both login and signup */}
+          <div>
+            <label style={label}>{isSignup ? 'I am a' : 'Sign in as'}</label>
             <div style={{ position: 'relative' }}>
               <select
                 value={accountType}
@@ -133,7 +141,7 @@ export default function AuthPage() {
                 <option value="manager">Manager — hiring or posting projects</option>
               </select>
             </div>
-          </div>}
+          </div>
 
           {/* Signup-only fields */}
           {isSignup && (
