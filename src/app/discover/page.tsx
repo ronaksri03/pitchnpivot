@@ -58,10 +58,16 @@ function DiscoverContent() {
 
   const loadProfiles = useCallback(async () => {
     setLoading(true)
+
+    // Exclude any profile IDs that are managers (edge case: dual-row accounts)
+    const { data: mgrRows } = await sb.from('managers').select('id')
+    const mgrIds = (mgrRows || []).map((m: { id: string }) => m.id)
+
     let query = sb.from('profiles')
       .select('id, username, first_name, last_name, location, skills, open_to_work, job_title, work_pref')
       .limit(100)
     if (openOnly) query = query.eq('open_to_work', true)
+    if (mgrIds.length > 0) query = query.not('id', 'in', `(${mgrIds.map((id: string) => `"${id}"`).join(',')})`)
 
     const { data } = await query
     let results: Profile[] = (data || []) as Profile[]
