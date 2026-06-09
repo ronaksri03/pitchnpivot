@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitNote, setSubmitNote] = useState('')
+  const [submitVideo, setSubmitVideo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitDone, setSubmitDone] = useState<Set<string>>(new Set()) // set of submitted projectIds
@@ -106,12 +107,13 @@ export default function ProfilePage() {
       individual_id: user.id,
       submission_url: submitUrl || null,
       note: submitNote || null,
+      video_url: submitVideo || null,
     })
     if (error) {
       setSubmitError(error.code === '23505' ? 'You already submitted work for this project.' : error.message)
     } else {
       setSubmitDone(prev => new Set(prev).add(submitProject.id))
-      setSubmitProject(null); setSubmitUrl(''); setSubmitNote('')
+      setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('')
     }
     setSubmitting(false)
   }
@@ -513,6 +515,10 @@ export default function ProfilePage() {
               <div>
                 <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Note to manager <span style={{ color: '#444' }}>(optional)</span></label>
                 <textarea style={{ width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const, resize: 'vertical' }} placeholder="Describe what you built…" rows={3} value={submitNote} onChange={e => setSubmitNote(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Video explanation <span style={{ color: '#444' }}>(Loom, YouTube — optional)</span></label>
+                <input style={{ width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }} placeholder="https://loom.com/share/..." value={submitVideo} onChange={e => setSubmitVideo(e.target.value)} />
               </div>
               {submitError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{submitError}</div>}
               <button type="submit" disabled={submitting} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>

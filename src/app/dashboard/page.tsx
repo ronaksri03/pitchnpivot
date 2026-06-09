@@ -373,7 +373,8 @@ export default function DashboardPage() {
                             </div>
                             {prof?.job_title && <div style={{ fontSize: '11px', color: '#555', marginBottom: '4px' }}>{prof.job_title}</div>}
                             {s.note && <div style={{ fontSize: '12px', color: '#777', marginBottom: '4px' }}>{s.note}</div>}
-                            {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 View work</a>}
+                            {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginRight: '10px' }}>🔗 View work</a>}
+                            {s.video_url && <a href={s.video_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>▶ Watch video</a>}
                             <div style={{ fontSize: '11px', color: '#444', marginTop: '4px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
                           </div>
                           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>

@@ -36,6 +36,7 @@ export default function LabPage() {
   const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitNote, setSubmitNote] = useState('')
+  const [submitVideo, setSubmitVideo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
@@ -94,11 +95,12 @@ export default function LabPage() {
       individual_id: user.id,
       submission_url: submitUrl || null,
       note: submitNote || null,
+      video_url: submitVideo || null,
     })
     if (error) {
       setSubmitError(error.code === '23505' ? 'You already submitted work for this project.' : error.message)
     } else {
-      setSubmitProject(null); setSubmitUrl(''); setSubmitNote('')
+      setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('')
       await loadData()
     }
     setSubmitting(false)
@@ -277,7 +279,8 @@ export default function LabPage() {
                     <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '6px' }}>{proj?.title || 'Project'}</div>
                     {proj?.pay_type && <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>{proj.pay_type === 'paid' ? '💰 Paid' : proj.pay_type === 'bounty' ? '🏆 Bounty' : proj.pay_type === 'equity' ? '📈 Equity' : proj.pay_type === 'unpaid' ? '🤝 Unpaid' : '❓ TBD'}</div>}
                     {s.note && <div style={{ fontSize: '13px', color: '#777', marginBottom: '6px' }}>{s.note}</div>}
-                    {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>🔗 View submission</a>}
+                    {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginRight: '10px' }}>🔗 View submission</a>}
+                    {s.video_url && <a href={s.video_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>▶ Watch video</a>}
                     <div style={{ fontSize: '11px', color: '#444', marginTop: '6px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
                   </div>
                   <span style={{
@@ -315,6 +318,10 @@ export default function LabPage() {
               <div>
                 <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Note to manager <span style={{ color: '#444' }}>(optional)</span></label>
                 <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Describe what you built…" rows={3} value={submitNote} onChange={e => setSubmitNote(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Video explanation <span style={{ color: '#444' }}>(Loom, YouTube — optional)</span></label>
+                <input style={inp} placeholder="https://loom.com/share/..." value={submitVideo} onChange={e => setSubmitVideo(e.target.value)} />
               </div>
               {submitError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{submitError}</div>}
               <button type="submit" disabled={submitting} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
