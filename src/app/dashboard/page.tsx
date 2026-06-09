@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { Manager, ManagerProject, ProjectSubmission } from '@/types'
+import EditManagerModal from '@/components/EditManagerModal'
 
 const PAY_LABEL: Record<string, string> = {
   paid: '💰 Paid', bounty: '🏆 Bounty', equity: '📈 Equity', unpaid: '🤝 Unpaid', tbd: '❓ TBD',
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   const [editStatus, setEditStatus] = useState<'open' | 'closed' | 'draft'>('open')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [showEditProfile, setShowEditProfile] = useState(false)
 
   const sb = getClient()
 
@@ -161,10 +163,45 @@ export default function DashboardPage() {
 
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Manager Dashboard</div>
-        <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f0ece4', margin: 0 }}>{manager?.name || user.email?.split('@')[0]}</h1>
-        {manager?.company && <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>{manager.role ? `${manager.role} · ` : ''}{manager.company}</div>}
+      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Manager Dashboard</div>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f0ece4', margin: '0 0 4px' }}>{manager?.name || user.email?.split('@')[0]}</h1>
+          {manager?.company && (
+            <div style={{ fontSize: '14px', color: '#888', marginBottom: '6px' }}>
+              {manager.role ? `${manager.role} · ` : ''}{manager.company}
+            </div>
+          )}
+          {manager?.company_description && (
+            <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px', maxWidth: '480px' }}>{manager.company_description}</div>
+          )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            {manager?.company_size && (
+              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: '#111', border: '1px solid #2a2a2a', color: '#888' }}>
+                {manager.company_size === 'solo' ? 'Solo' : manager.company_size === 'startup' ? 'Startup (2–20)' : manager.company_size === 'smb' ? 'SMB (21–200)' : 'Enterprise (200+)'}
+              </span>
+            )}
+            {manager?.location && (
+              <span style={{ fontSize: '11px', color: '#666' }}>📍 {manager.location}</span>
+            )}
+            {manager?.website_url && (
+              <a href={manager.website_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#c8ff00', textDecoration: 'none', padding: '3px 10px', borderRadius: '20px', border: '1px solid rgba(200,255,0,0.25)', background: 'rgba(200,255,0,0.06)' }}>
+                🔗 Website
+              </a>
+            )}
+            {(manager?.industries || []).slice(0, 4).map((ind: string) => (
+              <span key={ind} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.15)', color: '#c8ff00' }}>{ind}</span>
+            ))}
+          </div>
+        </div>
+        <button onClick={() => setShowEditProfile(true)} style={{
+          display: 'flex', alignItems: 'center', gap: '7px',
+          background: 'rgba(255,255,255,0.05)', border: '1px solid #2a2a2a',
+          borderRadius: '9px', color: '#aaa', fontSize: '13px', fontWeight: 600,
+          padding: '9px 16px', cursor: 'pointer', flexShrink: 0,
+        }}>
+          ✎ Edit profile
+        </button>
       </div>
 
       <button onClick={() => setShowForm(s => !s)} style={{
@@ -354,6 +391,13 @@ export default function DashboardPage() {
             )
           })}
         </div>
+      )}
+      {showEditProfile && manager && (
+        <EditManagerModal
+          manager={manager}
+          onClose={() => setShowEditProfile(false)}
+          onSaved={(m) => setManager(m)}
+        />
       )}
     </div>
   )

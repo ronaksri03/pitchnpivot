@@ -30,6 +30,11 @@ export interface Manager {
   name: string
   company: string | null
   role: string | null
+  company_description: string | null
+  company_size: 'solo' | 'startup' | 'smb' | 'enterprise' | null
+  industries: string[]
+  location: string | null
+  website_url: string | null
   created_at: string
 }
 
