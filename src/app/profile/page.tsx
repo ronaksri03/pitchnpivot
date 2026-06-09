@@ -37,7 +37,7 @@ export default function ProfilePage() {
   const [submitNote, setSubmitNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [submitDone, setSubmitDone] = useState<string | null>(null) // projectId of done submission
+  const [submitDone, setSubmitDone] = useState<Set<string>>(new Set()) // set of submitted projectIds
   const sb = getClient()
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     if (error) {
       setSubmitError(error.code === '23505' ? 'You already submitted work for this project.' : error.message)
     } else {
-      setSubmitDone(submitProject.id)
+      setSubmitDone(prev => new Set(prev).add(submitProject.id))
       setSubmitProject(null); setSubmitUrl(''); setSubmitNote('')
     }
     setSubmitting(false)
@@ -437,7 +437,7 @@ export default function ProfilePage() {
                   <div key={p.id} style={{ background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>{p.title}</div>
-                      {submitDone === p.id ? (
+                      {submitDone.has(p.id) ? (
                         <span style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700 }}>✓ Submitted</span>
                       ) : (
                         <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitError('') }}
