@@ -27,6 +27,7 @@ export default function LabPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [timeline, setTimeline] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [skillInput, setSkillInput] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
@@ -75,10 +76,11 @@ export default function LabPage() {
     setPosting(true)
     await sb.from('individual_projects').insert({
       user_id: user.id, title, description, timeline,
+      video_url: videoUrl || null,
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
     })
-    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setSkills([])
+    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setSkills([])
     await loadData()
     setPosting(false)
   }
@@ -182,6 +184,7 @@ export default function LabPage() {
                           </div>
                         )}
                         {p.description && <p style={{ fontSize: '13px', color: '#888', margin: '0 0 10px', lineHeight: 1.6 }}>{p.description}</p>}
+                        {p.video_url && <a href={p.video_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginBottom: '10px' }}>▶ Watch video</a>}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                           {p.skills_required?.slice(0, 5).map(s => (
                             <span key={s} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>
@@ -224,6 +227,7 @@ export default function LabPage() {
               <input style={inp} placeholder="Project title" value={title} onChange={e => setTitle(e.target.value)} required />
               <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
               <input style={inp} placeholder="Timeline (e.g. 2 weeks)" value={timeline} onChange={e => setTimeline(e.target.value)} />
+              <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
@@ -248,6 +252,7 @@ export default function LabPage() {
                 <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px 16px' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
                   {p.description && <div style={{ fontSize: '13px', color: '#777', marginBottom: '8px' }}>{p.description}</div>}
+                  {p.video_url && <a href={p.video_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginBottom: '8px' }}>▶ Watch video</a>}
                   {p.skills?.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                       {p.skills.map(s => <span key={s} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>)}

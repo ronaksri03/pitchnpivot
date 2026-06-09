@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [timeline, setTimeline] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [payType, setPayType] = useState('paid')
   const [skillInput, setSkillInput] = useState('')
   const [skills, setSkills] = useState<string[]>([])
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editTimeline, setEditTimeline] = useState('')
+  const [editVideoUrl, setEditVideoUrl] = useState('')
   const [editPayType, setEditPayType] = useState('paid')
   const [editSkillInput, setEditSkillInput] = useState('')
   const [editSkills, setEditSkills] = useState<string[]>([])
@@ -92,6 +94,7 @@ export default function DashboardPage() {
     setEditTitle(p.title)
     setEditDesc(p.description || '')
     setEditTimeline(p.timeline || '')
+    setEditVideoUrl(p.video_url || '')
     setEditPayType(p.pay_type || 'paid')
     setEditSkills(p.skills_required || [])
     setEditSkillInput('')
@@ -118,6 +121,7 @@ export default function DashboardPage() {
     const updates: Partial<ManagerProject> = {
       title: editTitle, description: editDesc || null,
       timeline: editTimeline || null, pay_type: editPayType as ManagerProject['pay_type'],
+      video_url: editVideoUrl || null,
       skills_required: editSkills, visibility: editVisibility, status: editStatus,
     }
     if (assigneeId !== undefined) updates.assigned_to = assigneeId
@@ -143,11 +147,11 @@ export default function DashboardPage() {
     }
 
     await sb.from('manager_projects').insert({
-      manager_id: user.id, title, description, timeline, pay_type: payType,
+      manager_id: user.id, title, description, timeline, pay_type: payType, video_url: videoUrl || null,
       skills_required: skills, visibility, assigned_to: assigneeId,
       status: 'open', created_at: new Date().toISOString(),
     })
-    setShowForm(false); setTitle(''); setDescription(''); setTimeline('')
+    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl('')
     setSkills([]); setSkillInput(''); setAssignee(''); setVisibility('public')
     await loadAll()
     setPosting(false)
@@ -229,6 +233,7 @@ export default function DashboardPage() {
               {Object.entries(PAY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
+          <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
           <div style={{ display: 'flex', gap: '8px' }}>
             <input style={{ ...inp, flex: 1 }} placeholder="Required skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
@@ -274,6 +279,7 @@ export default function DashboardPage() {
                   {Object.entries(PAY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
+              <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)} />
               {/* Skills */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={editSkillInput} onChange={e => setEditSkillInput(e.target.value)}
@@ -327,7 +333,7 @@ export default function DashboardPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
                     <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>
-                      {p.timeline && `⏱ ${p.timeline} · `}
+                      {p.video_url && <><a href={p.video_url} target="_blank" rel="noreferrer" style={{ color: '#c8ff00', textDecoration: 'none' }}>▶ video</a>{' · '}</>}{p.timeline && `⏱ ${p.timeline} · `}
                       {p.visibility === 'private' ? '🔒 Private' : '🌐 Public'}
                       {p.assigned_to && ' · Assigned'}
                       {' · '}

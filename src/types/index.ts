@@ -57,6 +57,7 @@ export interface IndividualProject {
   status: 'completed' | 'in-progress' | 'idea' | null
   skills: string[]
   demo_link: string | null
+  video_url: string | null
   visibility: 'public' | 'private'
   created_at: string
 }
@@ -72,6 +73,7 @@ export interface ManagerProject {
   visibility: 'public' | 'private'
   assigned_to: string | null
   status: 'open' | 'closed' | 'draft'
+  video_url: string | null
   created_at: string
   managers?: Pick<Manager, 'name' | 'company'>
 }
