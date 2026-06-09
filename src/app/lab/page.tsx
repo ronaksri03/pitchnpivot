@@ -33,6 +33,7 @@ export default function LabPage() {
   const [skillInput, setSkillInput] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [posting, setPosting] = useState(false)
+  const [postError, setPostError] = useState('')
 
   // Submit work modal
   const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
@@ -76,8 +77,8 @@ export default function LabPage() {
   async function postIndProject(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
-    setPosting(true)
-    await sb.from('individual_projects').insert({
+    setPosting(true); setPostError('')
+    const { error } = await sb.from('individual_projects').insert({
       user_id: user.id, title, description, timeline,
       demo_link: demoUrl || null,
       github_url: githubUrl || null,
@@ -85,8 +86,12 @@ export default function LabPage() {
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
     })
-    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
-    await loadData()
+    if (error) {
+      setPostError(error.message)
+    } else {
+      setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
+      await loadData()
+    }
     setPosting(false)
   }
 
@@ -249,6 +254,7 @@ export default function LabPage() {
                   {skills.map(s => <span key={s} onClick={() => setSkills(p => p.filter(x => x !== s))} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#c8ff00', cursor: 'pointer' }}>{s} ✕</span>)}
                 </div>
               )}
+              {postError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{postError}</div>}
               <button type="submit" disabled={posting} style={{ padding: '10px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
                 {posting ? 'Posting…' : 'Post project'}
               </button>
