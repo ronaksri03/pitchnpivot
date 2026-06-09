@@ -78,18 +78,29 @@ export default function LabPage() {
     e.preventDefault()
     if (!user) return
     setPosting(true); setPostError('')
-    const { data: newRow, error } = await sb.from('individual_projects').insert({
+    const { error } = await sb.from('individual_projects').insert({
       user_id: user.id, title, description, timeline,
       demo_link: demoUrl || null,
       github_url: githubUrl || null,
       video_url: videoUrl || null,
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
-    }).select().single()
+    })
     if (error) {
       setPostError(error.message)
     } else {
-      setMyProjects(prev => [newRow as IndividualProject, ...prev])
+      // RLS may block SELECT after insert — build from form state
+      const optimistic: IndividualProject = {
+        id: crypto.randomUUID(),
+        user_id: user.id, title, description: description || null,
+        timeline: timeline || null,
+        demo_link: demoUrl || null,
+        github_url: githubUrl || null,
+        video_url: videoUrl || null,
+        status: 'in-progress', skills, visibility: 'public',
+        created_at: new Date().toISOString(),
+      }
+      setMyProjects(prev => [optimistic, ...prev])
       setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
     }
     setPosting(false)
