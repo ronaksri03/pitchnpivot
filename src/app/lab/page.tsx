@@ -78,19 +78,19 @@ export default function LabPage() {
     e.preventDefault()
     if (!user) return
     setPosting(true); setPostError('')
-    const { error } = await sb.from('individual_projects').insert({
+    const { data: newRow, error } = await sb.from('individual_projects').insert({
       user_id: user.id, title, description, timeline,
       demo_link: demoUrl || null,
       github_url: githubUrl || null,
       video_url: videoUrl || null,
       status: 'in-progress', skills, visibility: 'public',
       created_at: new Date().toISOString(),
-    })
+    }).select().single()
     if (error) {
       setPostError(error.message)
     } else {
+      setMyProjects(prev => [newRow as IndividualProject, ...prev])
       setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl(''); setDemoUrl(''); setGithubUrl(''); setSkills([])
-      await loadData()
     }
     setPosting(false)
   }
