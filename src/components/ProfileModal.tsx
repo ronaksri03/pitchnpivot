@@ -14,6 +14,26 @@ function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
+function thumbnailUrl(url: string): string | null {
+  try {
+    const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/)
+    if (yt) return `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`
+    const loom = url.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/)
+    if (loom) return `https://cdn.loom.com/sessions/thumbnails/${loom[1]}/thumbnail.gif`
+  } catch { /* noop */ }
+  return null
+}
+
+function embedUrl(url: string): string | null {
+  try {
+    if (url.includes('loom.com/share/')) return url.replace('loom.com/share/', 'loom.com/embed/')
+    if (url.includes('loom.com/embed/')) return url
+    const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/)
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1`
+  } catch { /* noop */ }
+  return null
+}
+
 const AVAIL_MAP: Record<string, string> = {
   'full-time': '🟢 Full-time', 'part-time': '🟡 Part-time',
   'freelance': '⚡ Freelance', 'contract': '📄 Contract', 'internship': '🎓 Internship',
@@ -28,6 +48,7 @@ const STATUS_MAP: Record<string, string> = {
 export default function ProfileModal({ profileId, onClose }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [reels, setReels] = useState<Reel[]>([])
+  const [playingReel, setPlayingReel] = useState<string | null>(null)
   const [projects, setProjects] = useState<IndividualProject[]>([])
   const [loading, setLoading] = useState(true)
   const [showAssign, setShowAssign] = useState(false)
@@ -188,23 +209,43 @@ export default function ProfileModal({ profileId, onClose }: Props) {
 
             {/* Reels */}
             <div className="section-head">Reels</div>
-            {reels.length > 0 ? reels.map(r => (
-              <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px',
-                padding: '12px 14px', color: '#f0ece4', textDecoration: 'none', marginBottom: '8px',
-              }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(200,255,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>▶</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{r.title || 'Untitled reel'}</div>
-                  {r.skills?.length > 0 && (
-                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                      {r.skills.slice(0, 3).map(s => <span key={s} style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#666', border: '1px solid #222' }}>{s}</span>)}
-                    </div>
-                  )}
+            {reels.length > 0 ? reels.map(r => {
+              const thumb = thumbnailUrl(r.url)
+              const embed = embedUrl(r.url)
+              const isPlaying = playingReel === r.id
+              return (
+                <div key={r.id} style={{ border: '1px solid #2a2a2a', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px', background: '#111' }}>
+                  {/* Thumbnail / Player */}
+                  <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => embed && setPlayingReel(isPlaying ? null : r.id)}>
+                    {isPlaying && embed ? (
+                      <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                        <iframe src={embed} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }} allow="autoplay; fullscreen" allowFullScreen />
+                      </div>
+                    ) : thumb ? (
+                      <div style={{ position: 'relative' }}>
+                        <img src={thumb} alt={r.title || 'reel'} style={{ width: '100%', display: 'block', maxHeight: '200px', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.75)', border: '2px solid rgba(200,255,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8ff00', fontSize: '18px' }}>▶</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ height: '80px', background: 'rgba(200,255,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c8ff00', fontSize: '16px' }}>▶</div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Info */}
+                  <div style={{ padding: '10px 14px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0ece4', marginBottom: '6px' }}>{r.title || 'Untitled reel'}</div>
+                    {r.skills?.length > 0 && (
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {r.skills.slice(0, 4).map(s => <span key={s} style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', background: 'rgba(255,255,255,0.04)', color: '#666', border: '1px solid #222' }}>{s}</span>)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </a>
-            )) : <div style={{ color: '#555', fontSize: '13px' }}>No public reels yet.</div>}
+              )
+            }) : <div style={{ color: '#555', fontSize: '13px' }}>No public reels yet.</div>}
 
             {/* Projects */}
             <div className="section-head">Projects</div>
