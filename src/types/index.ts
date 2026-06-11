@@ -18,6 +18,7 @@ export interface Profile {
   website_url: string | null
   twitter_url: string | null
   discord_handle: string | null
+  intro_video_url: string | null
   hourly_rate: string | null
   college: string | null
   timezone: string | null

@@ -45,6 +45,7 @@ export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
     twitter_url: profile.twitter_url || '',
     website_url: profile.website_url || '',
     discord_handle: profile.discord_handle || '',
+    intro_video_url: profile.intro_video_url || '',
   })
 
   function set(key: string, val: string | boolean | string[]) {
@@ -76,6 +77,7 @@ export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
       twitter_url: form.twitter_url || null,
       website_url: form.website_url || null,
       discord_handle: form.discord_handle || null,
+      intro_video_url: form.intro_video_url || null,
     }).eq('id', profile.id).select().single()
     setSaving(false)
     if (err) { setError(err.message); return }
