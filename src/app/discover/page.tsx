@@ -74,13 +74,24 @@ function DiscoverContent() {
     const { data: mgrRows } = await sb.from('managers').select('id')
     const mgrIds = (mgrRows || []).map((m: { id: string }) => m.id)
 
-    let query = sb.from('profiles')
-      .select('id, username, first_name, last_name, location, skills, open_to_work, job_title, work_pref, years_exp, availability, hourly_rate, looking_for, github_url, portfolio_url, pronouns, intro_video_url')
-      .limit(100)
+    const baseSelect = 'id, username, first_name, last_name, location, skills, open_to_work, job_title, work_pref, years_exp, availability, hourly_rate, looking_for, github_url, portfolio_url, pronouns, intro_video_url'
+    const fallbackSelect = 'id, username, first_name, last_name, location, skills, open_to_work, job_title, work_pref, years_exp, availability, hourly_rate, looking_for, github_url, portfolio_url, pronouns'
+
+    let query = sb.from('profiles').select(baseSelect).limit(100)
     if (openOnly) query = query.eq('open_to_work', true)
     if (mgrIds.length > 0) query = query.not('id', 'in', `(${mgrIds.map((id: string) => `"${id}"`).join(',')})`)
 
-    const { data } = await query
+    let { data, error: qErr } = await query
+
+    // Fallback: intro_video_url column may not exist yet
+    if (qErr) {
+      let q2 = sb.from('profiles').select(fallbackSelect).limit(100)
+      if (openOnly) q2 = q2.eq('open_to_work', true)
+      if (mgrIds.length > 0) q2 = q2.not('id', 'in', `(${mgrIds.map((id: string) => `"${id}"`).join(',')})`)
+      const { data: d2 } = await q2
+      data = d2
+    }
+
     let results: Profile[] = (data || []) as Profile[]
 
     // Determine active search terms (community or manual)
