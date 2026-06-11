@@ -46,6 +46,18 @@ function embedUrl(url: string): string | null {
   return null
 }
 
+function thumbnailUrl(url: string): string | null {
+  try {
+    // YouTube
+    const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/)
+    if (yt) return `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`
+    // Loom
+    const loom = url.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/)
+    if (loom) return `https://cdn.loom.com/sessions/thumbnails/${loom[1]}/thumbnail.gif`
+  } catch { /* noop */ }
+  return null
+}
+
 function DiscoverContent() {
   const searchParams = useSearchParams()
   const communityTag = searchParams.get('community')
@@ -175,26 +187,41 @@ function DiscoverContent() {
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#333'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1e1e1e'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)' }}
               >
-                {/* Art header */}
-                <div style={{ height: '80px', background: gradientFor(p.skills || []), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', position: 'relative' }}>
-                  {emojiFor(p.skills || [])}
-                  {hasVideo && (
-                    <button onClick={e => { e.stopPropagation(); setVideoPreview(p as Profile) }} style={{
-                      position: 'absolute', right: '10px', top: '10px',
-                      background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(200,255,0,0.4)',
-                      color: '#c8ff00', borderRadius: '20px', padding: '4px 10px',
-                      fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                    }}>▶ Intro</button>
-                  )}
-                  {p.open_to_work && (
-                    <span style={{
-                      position: 'absolute', left: '10px', top: '10px',
-                      fontSize: '10px', fontWeight: 700, color: '#c8ff00',
-                      background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(200,255,0,0.35)',
-                      borderRadius: '20px', padding: '3px 8px',
-                    }}>● Open to work</span>
-                  )}
-                </div>
+                {/* Art header — thumbnail if video, else gradient */}
+                {(() => {
+                  const thumb = pFull.intro_video_url ? thumbnailUrl(pFull.intro_video_url) : null
+                  return (
+                    <div style={{ height: '140px', position: 'relative', overflow: 'hidden', background: gradientFor(p.skills || []) }}>
+                      {thumb ? (
+                        <>
+                          <img src={thumb} alt="intro preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />
+                        </>
+                      ) : (
+                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+                          {emojiFor(p.skills || [])}
+                        </div>
+                      )}
+                      {hasVideo && (
+                        <button onClick={e => { e.stopPropagation(); setVideoPreview(p as Profile) }} style={{
+                          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                          width: '44px', height: '44px', borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.75)', border: '2px solid rgba(200,255,0,0.6)',
+                          color: '#c8ff00', fontSize: '16px', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>▶</button>
+                      )}
+                      {p.open_to_work && (
+                        <span style={{
+                          position: 'absolute', left: '10px', top: '10px',
+                          fontSize: '10px', fontWeight: 700, color: '#c8ff00',
+                          background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(200,255,0,0.35)',
+                          borderRadius: '20px', padding: '3px 8px',
+                        }}>● Open to work</span>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Body */}
                 <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
