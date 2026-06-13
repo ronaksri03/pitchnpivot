@@ -1,7 +1,8 @@
+'use client';
 import React, { useState, useRef } from 'react';
 import {
   Zap, Heart, X, MessageSquare, Share2, Filter, ChevronDown,
-  Star, MapPin, Briefcase, Clock, DollarSign, Tag
+  Star, MapPin, Briefcase, Clock, DollarSign, Tag, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

@@ -1,6 +1,7 @@
+'use client';
 import React, { useState } from 'react';
 import {
-  ExternalLink, Github, Play, Award, Eye, Heart, Share2, ChevronRight,
+  ExternalLink, Code, Play, Award, Eye, Heart, Share2, ChevronRight,
   Filter, Grid, List, Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -46,7 +47,7 @@ export const PortfolioPage = () => {
       impact: '50k+ downloads in first month',
       views: 620,
       saves: 240,
-      testimonial: '"Best fitness app I've used. The AI form detection is incredible." — User Review',
+      testimonial: `"Best fitness app I've used. The AI form detection is incredible." — User Review`,
       testimonialAuthor: '⭐⭐⭐⭐⭐ 4.8/5',
       testimonialRole: 'App Store',
     },
@@ -331,7 +332,7 @@ export const PortfolioPage = () => {
                       href={project.githubUrl}
                       className="flex-1 px-4 py-2 bg-[#1a1a1a] text-[#c8ff00] rounded-lg border border-[#c8ff00] font-mono text-sm uppercase tracking-wide hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all flex items-center justify-center gap-2"
                     >
-                      <Github size={16} /> Code
+                      <Code size={16} /> Code
                     </a>
                   </div>
                 </div>
@@ -426,7 +427,7 @@ export const PortfolioPage = () => {
                     href={selectedProject.githubUrl}
                     className="px-4 py-3 bg-[#1a1a1a] text-[#c8ff00] rounded-lg border border-[#c8ff00] font-bold uppercase tracking-wide hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
-                    <Github size={18} /> GitHub
+                    <Code size={18} /> GitHub
                   </a>
                 </div>
               </div>
