@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Heart, MessageSquare, Share2, Download, ArrowDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
