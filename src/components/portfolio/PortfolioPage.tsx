@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 export const PortfolioPage = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
 
   const categories = ['All', 'Web', 'Mobile', 'Design', 'AI/ML'];
 
@@ -398,7 +398,7 @@ export const PortfolioPage = () => {
               <div>
                 <p className="text-xs uppercase tracking-widest text-[#2d2d2d] mb-3">Technologies Used</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedProject.skills.map((skill, i) => (
+                  {selectedProject.skills.map((skill: string, i: number) => (
                     <span key={i} className="px-3 py-1 bg-[#0a0a0a] text-[#c8ff00] rounded-full text-xs font-mono border border-[#c8ff00]">
                       {skill}
                     </span>

@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import {
   Zap, Heart, X, MessageSquare, Share2, Filter, ChevronDown,
-  Star, MapPin, Briefcase, Clock, DollarSign, Tag, Eye
+  Star, MapPin, Briefcase, Clock, DollarSign, Tag, Eye, Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -74,7 +74,7 @@ export const DiscoverPage = () => {
   const current = talents[currentIndex];
   const progress = ((currentIndex + 1) / talents.length) * 100;
 
-  const handleSwipe = (newDirection) => {
+  const handleSwipe = (newDirection: number) => {
     setDirection(newDirection);
     setCurrentIndex((prev) => (prev + 1) % talents.length);
   };
@@ -164,7 +164,7 @@ export const DiscoverPage = () => {
                       className="w-20 h-20 rounded-full bg-[#c8ff00] flex items-center justify-center shadow-2xl"
                       whileHover={{ scale: 1.15 }}
                     >
-                      <play className="w-8 h-8 text-[#0a0a0a] fill-current ml-1" />
+                      <Play className="w-8 h-8 text-[#0a0a0a] fill-current ml-1" />
                     </motion.div>
                   </motion.div>
 
@@ -327,7 +327,7 @@ export const DiscoverPage = () => {
                   min="25"
                   max="200"
                   value={filters.maxRate}
-                  onChange={(e) => setFilters({ ...filters, maxRate: e.target.value })}
+                  onChange={(e) => setFilters({ ...filters, maxRate: Number(e.target.value) })}
                   className="w-full accent-[#c8ff00]"
                 />
                 <div className="text-right text-sm font-bold text-[#c8ff00]">

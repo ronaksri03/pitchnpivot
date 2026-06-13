@@ -7,10 +7,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ===== MANAGER DASHBOARD =====
-export const ManagerDashboard = ({ manager }) => {
-  const [expandedProject, setExpandedProject] = useState(null);
+export const ManagerDashboard = ({ manager }: { manager: any }) => {
+  const [expandedProject, setExpandedProject] = useState<any>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
   const projects = [
@@ -88,7 +88,7 @@ export const ManagerDashboard = ({ manager }) => {
     },
   ];
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
         return 'text-[#c8ff00] bg-[#1a1a1a] border-[#c8ff00]';
@@ -101,7 +101,7 @@ export const ManagerDashboard = ({ manager }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
         return <Clock size={16} />;
@@ -196,7 +196,7 @@ export const ManagerDashboard = ({ manager }) => {
 
             {/* Filters */}
             <div className="flex gap-2">
-              {['all', 'pending', 'accepted', 'rejected'].map((status) => (
+              {['all', 'pending', 'accepted', 'rejected'].map((status: string) => (
                 <motion.button
                   key={status}
                   onClick={() => setFilterStatus(status)}

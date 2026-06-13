@@ -4,7 +4,7 @@ import { Play, Heart, MessageSquare, Share2, Download, ArrowDown, ChevronRight }
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ===== ENHANCED INDIVIDUAL PROFILE (Video CV) =====
-export const EnhancedProfile = ({ individual, manager }) => {
+export const EnhancedProfile = ({ individual, manager }: { individual: any; manager?: any }) => {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState('projects');
   const [showSaved, setShowSaved] = useState(false);
@@ -154,7 +154,7 @@ export const EnhancedProfile = ({ individual, manager }) => {
           >
             <h3 className="text-2xl font-bold" style={{ fontFamily: 'Space Mono' }}>Skills</h3>
             <div className="flex flex-wrap gap-3">
-              {individual.skills.map((skill, i) => (
+              {individual.skills.map((skill: string, i: number) => (
                 <motion.span
                   key={i}
                   className="px-4 py-2 bg-[#1a1a1a] text-[#c8ff00] rounded-full text-sm font-mono border border-[#c8ff00] cursor-pointer hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all"
