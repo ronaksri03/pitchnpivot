@@ -1,411 +1,158 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { Manager, ManagerProject, ProjectSubmission } from '@/types'
-import EditManagerModal from '@/components/EditManagerModal'
 
-const PAY_LABEL: Record<string, string> = {
-  paid: '💰 Paid', bounty: '🏆 Bounty', equity: '📈 Equity', unpaid: '🤝 Unpaid', tbd: '❓ TBD',
-}
-
-const inp: React.CSSProperties = {
-  width: '100%', padding: '10px 13px', background: '#111', border: '1px solid #2a2a2a',
-  borderRadius: '8px', color: '#f0ece4', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-}
+const C = { obsidian: '#0a0a0a', slate: '#1a1a1a', filmLight: '#f0ece4', lime: '#c8ff00', gray: '#888', border: '#2a2a2a', charcoal: '#2d2d2d' }
 
 export default function DashboardPage() {
   const { user, accountType, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [manager, setManager] = useState<Manager | null>(null)
-  const [projects, setProjects] = useState<ManagerProject[]>([])
-  const [submissions, setSubmissions] = useState<Record<string, ProjectSubmission[]>>({})
-  const [expandedProject, setExpandedProject] = useState<string | null>(null)
+  const [stats, setStats] = useState({ reels: 0, projects: 0, views: 0, submissions: 0, accepted: 0, pending: 0 })
+  const [recentViews, setRecentViews] = useState<any[]>([])
+  const [recentSubs, setRecentSubs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  // Create form
-  const [showForm, setShowForm] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [timeline, setTimeline] = useState('')
-  const [videoUrl, setVideoUrl] = useState('')
-  const [payType, setPayType] = useState('paid')
-  const [skillInput, setSkillInput] = useState('')
-  const [skills, setSkills] = useState<string[]>([])
-  const [assignee, setAssignee] = useState('')
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public')
-  const [posting, setPosting] = useState(false)
-  const [postError, setPostError] = useState('')
-
-  // Edit state
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editDesc, setEditDesc] = useState('')
-  const [editTimeline, setEditTimeline] = useState('')
-  const [editVideoUrl, setEditVideoUrl] = useState('')
-  const [editPayType, setEditPayType] = useState('paid')
-  const [editSkillInput, setEditSkillInput] = useState('')
-  const [editSkills, setEditSkills] = useState<string[]>([])
-  const [editVisibility, setEditVisibility] = useState<'public' | 'private'>('public')
-  const [editAssignee, setEditAssignee] = useState('')
-  const [editStatus, setEditStatus] = useState<'open' | 'closed' | 'draft'>('open')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const [showEditProfile, setShowEditProfile] = useState(false)
-
   const sb = getClient()
 
   useEffect(() => {
-    if (!authLoading && (!user || accountType !== 'manager')) router.replace('/auth')
-    if (user && accountType === 'manager') loadAll()
+    if (!authLoading && !user) router.replace('/auth')
+    if (!authLoading && accountType === 'manager') router.replace('/auth')
+    if (!authLoading && user && accountType === 'individual') load()
   }, [authLoading, user, accountType])
 
-  async function loadAll() {
+  async function load() {
     if (!user) return
-    const [mgrRes, projRes] = await Promise.all([
-      sb.from('managers').select('*').eq('id', user.id).single(),
-      sb.from('manager_projects').select('*').eq('manager_id', user.id).order('created_at', { ascending: false }),
+    const [reelsRes, projRes, viewsRes, subsRes] = await Promise.all([
+      sb.from('reels').select('id', { count: 'exact' }).eq('user_id', user.id),
+      sb.from('individual_projects').select('id', { count: 'exact' }).eq('user_id', user.id),
+      sb.from('profile_views').select('*, managers(name, company)').eq('profile_user_id', user.id).order('viewed_at', { ascending: false }).limit(5),
+      sb.from('project_submissions').select('*, manager_projects(title)').eq('individual_id', user.id).order('submitted_at', { ascending: false }).limit(10),
     ])
-    setManager(mgrRes.data)
-    const projs = (projRes.data || []) as ManagerProject[]
-    setProjects(projs)
-    setLoading(false)
-
-    const allIds = projs.map(p => p.id)
-    if (allIds.length > 0) {
-      const { data: subs } = await sb
-        .from('project_submissions')
-        .select('*, profiles(first_name, last_name, username, job_title)')
-        .in('project_id', allIds)
-        .order('submitted_at', { ascending: false })
-      const grouped: Record<string, ProjectSubmission[]> = {}
-      ;(subs || []).forEach(s => {
-        if (!grouped[s.project_id]) grouped[s.project_id] = []
-        grouped[s.project_id].push(s as ProjectSubmission)
-      })
-      setSubmissions(grouped)
-    }
-  }
-
-  function startEdit(p: ManagerProject) {
-    setEditId(p.id)
-    setEditTitle(p.title)
-    setEditDesc(p.description || '')
-    setEditTimeline(p.timeline || '')
-    setEditVideoUrl(p.video_url || '')
-    setEditPayType(p.pay_type || 'paid')
-    setEditSkills(p.skills_required || [])
-    setEditSkillInput('')
-    setEditVisibility(p.visibility)
-    setEditStatus(p.status)
-    setEditAssignee('')
-    setSaveError('')
-    setExpandedProject(null)
-  }
-
-  async function saveEdit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editId) return
-    setSaving(true); setSaveError('')
-
-    let assigneeId: string | null | undefined = undefined
-    if (editAssignee.trim()) {
-      const term = editAssignee.trim().replace(/^@/, '')
-      const { data: ap } = await sb.from('profiles').select('id').eq('username', term).maybeSingle()
-      if (!ap) { setSaveError(`Username @${term} not found`); setSaving(false); return }
-      assigneeId = ap.id
-    }
-
-    const updates: Partial<ManagerProject> = {
-      title: editTitle, description: editDesc || null,
-      timeline: editTimeline || null, pay_type: editPayType as ManagerProject['pay_type'],
-      video_url: editVideoUrl || null,
-      skills_required: editSkills, visibility: editVisibility, status: editStatus,
-    }
-    if (assigneeId !== undefined) updates.assigned_to = assigneeId
-
-    const { error } = await sb.from('manager_projects').update(updates).eq('id', editId)
-    if (error) { setSaveError(error.message); setSaving(false); return }
-    setEditId(null)
-    await loadAll()
-    setSaving(false)
-  }
-
-  async function postProject(e: React.FormEvent) {
-    e.preventDefault()
-    if (!user) return
-    setPosting(true); setPostError('')
-
-    let assigneeId: string | null = null
-    if (visibility === 'private' && assignee.trim()) {
-      const term = assignee.trim().replace(/^@/, '')
-      const { data: ap } = await sb.from('profiles').select('id').eq('username', term).maybeSingle()
-      if (!ap) { setPostError(`Username @${term} not found.`); setPosting(false); return }
-      assigneeId = ap.id
-    }
-
-    await sb.from('manager_projects').insert({
-      manager_id: user.id, title, description, timeline, pay_type: payType, video_url: videoUrl || null,
-      skills_required: skills, visibility, assigned_to: assigneeId,
-      status: 'open', created_at: new Date().toISOString(),
+    const subs = subsRes.data || []
+    setStats({
+      reels: reelsRes.count || 0,
+      projects: projRes.count || 0,
+      views: viewsRes.data?.length || 0,
+      submissions: subs.length,
+      accepted: subs.filter((s: any) => s.status === 'accepted').length,
+      pending: subs.filter((s: any) => s.status === 'pending').length,
     })
-    setShowForm(false); setTitle(''); setDescription(''); setTimeline(''); setVideoUrl('')
-    setSkills([]); setSkillInput(''); setAssignee(''); setVisibility('public')
-    await loadAll()
-    setPosting(false)
+    setRecentViews(viewsRes.data || [])
+    setRecentSubs(subs)
+    setLoading(false)
   }
 
-  async function updateSubmissionStatus(subId: string, status: 'accepted' | 'rejected') {
-    await sb.from('project_submissions').update({ status }).eq('id', subId)
-    await loadAll()
-  }
+  if (authLoading || loading) return (
+    <div style={{ minHeight: '100vh', background: C.obsidian, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${C.border}`, borderTopColor: C.lime, animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
 
-  if (authLoading || loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#555' }}>Loading…</div>
-  if (!user || accountType !== 'manager') return null
+  const subStatus: Record<string, { color: string; label: string }> = {
+    pending: { color: '#ffc800', label: '⏳ Pending' },
+    accepted: { color: C.lime, label: '✓ Accepted' },
+    rejected: { color: '#ff6b6b', label: '✕ Rejected' },
+  }
 
   return (
-    <div style={{ maxWidth: '820px', margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '11px', color: '#c8ff00', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Manager Dashboard</div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f0ece4', margin: '0 0 4px' }}>{manager?.name || user.email?.split('@')[0]}</h1>
-          {manager?.company && (
-            <div style={{ fontSize: '14px', color: '#888', marginBottom: '6px' }}>
-              {manager.role ? `${manager.role} · ` : ''}{manager.company}
-            </div>
-          )}
-          {manager?.company_description && (
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px', maxWidth: '480px' }}>{manager.company_description}</div>
-          )}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-            {manager?.company_size && (
-              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: '#111', border: '1px solid #2a2a2a', color: '#888' }}>
-                {manager.company_size === 'solo' ? 'Solo' : manager.company_size === 'startup' ? 'Startup (2–20)' : manager.company_size === 'smb' ? 'SMB (21–200)' : 'Enterprise (200+)'}
-              </span>
-            )}
-            {manager?.location && (
-              <span style={{ fontSize: '11px', color: '#666' }}>📍 {manager.location}</span>
-            )}
-            {manager?.website_url && (
-              <a href={manager.website_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#c8ff00', textDecoration: 'none', padding: '3px 10px', borderRadius: '20px', border: '1px solid rgba(200,255,0,0.25)', background: 'rgba(200,255,0,0.06)' }}>
-                🔗 Website
-              </a>
-            )}
-            {(manager?.industries || []).slice(0, 4).map((ind: string) => (
-              <span key={ind} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.15)', color: '#c8ff00' }}>{ind}</span>
+    <div style={{ background: C.obsidian, minHeight: '100vh', color: C.filmLight, fontFamily: 'Inter, sans-serif' }}>
+
+      {/* Header */}
+      <div style={{ borderBottom: `1px solid ${C.border}`, padding: '40px 40px 32px' }}>
+        <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.lime, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: 8 }}>Overview</div>
+        <h1 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontFamily: 'monospace', fontWeight: 700, margin: '0 0 6px' }}>Dashboard</h1>
+        <p style={{ margin: 0, fontSize: 13, color: C.gray }}>Your activity at a glance</p>
+      </div>
+
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: 40 }}>
+
+        {/* Stats grid */}
+        <div>
+          <div style={{ fontSize: 10, fontFamily: 'monospace', color: C.gray, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>Stats</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
+            {[
+              { label: 'Reels', value: stats.reels, color: C.lime, icon: '▶', link: '/profile' },
+              { label: 'Projects', value: stats.projects, color: C.lime, icon: '🗂', link: '/portfolio' },
+              { label: 'Profile Views', value: stats.views, color: C.filmLight, icon: '👔', link: '/profile' },
+              { label: 'Applications', value: stats.submissions, color: C.filmLight, icon: '📤', link: '/discover' },
+              { label: 'Accepted', value: stats.accepted, color: C.lime, icon: '✓', link: '/discover' },
+              { label: 'Pending', value: stats.pending, color: '#ffc800', icon: '⏳', link: '/discover' },
+            ].map(s => (
+              <div key={s.label} onClick={() => router.push(s.link)} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 14, padding: '20px 22px', cursor: 'pointer', transition: 'border-color 0.2s, transform 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.lime; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)' }}>
+                <div style={{ fontSize: 11, color: C.gray, marginBottom: 8 }}>{s.icon}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'monospace', color: s.color, marginBottom: 4 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: C.gray, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</div>
+              </div>
             ))}
           </div>
         </div>
-        <button onClick={() => setShowEditProfile(true)} style={{
-          display: 'flex', alignItems: 'center', gap: '7px',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid #2a2a2a',
-          borderRadius: '9px', color: '#aaa', fontSize: '13px', fontWeight: 600,
-          padding: '9px 16px', cursor: 'pointer', flexShrink: 0,
-        }}>
-          ✎ Edit profile
-        </button>
-      </div>
 
-      <button onClick={() => setShowForm(s => !s)} style={{
-        padding: '10px 18px', background: showForm ? '#1a1a1a' : '#c8ff00',
-        color: showForm ? '#888' : '#0a0a0a', border: '1px solid #2a2a2a',
-        borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginBottom: '24px',
-      }}>{showForm ? 'Cancel' : '+ Post a project'}</button>
-
-      {/* Create form */}
-      {showForm && (
-        <form onSubmit={postProject} style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '14px', padding: '22px', marginBottom: '28px', display: 'flex', flexDirection: 'column', gap: '13px' }}>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f0ece4' }}>New project</h3>
-          <div style={{ display: 'flex', background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '3px', gap: '3px' }}>
-            {(['public', 'private'] as const).map(v => (
-              <button key={v} type="button" onClick={() => setVisibility(v)} style={{ flex: 1, padding: '7px', border: 'none', borderRadius: '6px', cursor: 'pointer', background: visibility === v ? '#1e1e1e' : 'transparent', color: visibility === v ? '#f0ece4' : '#555', fontSize: '13px', fontWeight: 600 }}>
-                {v === 'public' ? '🌐 Public' : '🔒 Private'}
+        {/* Quick actions */}
+        <div>
+          <div style={{ fontSize: 10, fontFamily: 'monospace', color: C.gray, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>Quick Actions</div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Edit Profile', icon: '✎', href: '/profile' },
+              { label: 'Browse Projects', icon: '🔍', href: '/discover' },
+              { label: 'Add Project', icon: '+', href: '/portfolio' },
+            ].map(a => (
+              <button key={a.label} onClick={() => router.push(a.href)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.slate, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 18px', color: C.filmLight, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'border-color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = C.lime}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                <span style={{ color: C.lime }}>{a.icon}</span> {a.label}
               </button>
             ))}
           </div>
-          <input style={inp} placeholder="Project title *" value={title} onChange={e => setTitle(e.target.value)} required />
-          <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <input style={inp} placeholder="Timeline" value={timeline} onChange={e => setTimeline(e.target.value)} />
-            <select style={{ ...inp, appearance: 'none' }} value={payType} onChange={e => setPayType(e.target.value)}>
-              {Object.entries(PAY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </div>
-          <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input style={{ ...inp, flex: 1 }} placeholder="Required skill, press Enter" value={skillInput} onChange={e => setSkillInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') } }} />
-            <button type="button" onClick={() => { if (skillInput.trim() && !skills.includes(skillInput.trim())) setSkills(p => [...p, skillInput.trim()]); setSkillInput('') }}
-              style={{ padding: '8px 14px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Add</button>
-          </div>
-          {skills.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {skills.map(s => <span key={s} onClick={() => setSkills(p => p.filter(x => x !== s))} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#c8ff00', cursor: 'pointer' }}>{s} ✕</span>)}
-            </div>
-          )}
-          {visibility === 'private' && <input style={inp} placeholder="Assign to @username" value={assignee} onChange={e => setAssignee(e.target.value)} />}
-          {postError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{postError}</div>}
-          <button type="submit" disabled={posting} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
-            {posting ? 'Posting…' : `Post ${visibility} project`}
-          </button>
-        </form>
-      )}
+        </div>
 
-      {/* Edit modal */}
-      {editId && (
-        <div onClick={e => e.target === e.currentTarget && setEditId(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-          <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f0ece4' }}>Edit project</div>
-              <button onClick={() => setEditId(null)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px' }}>✕</button>
-            </div>
-            <form onSubmit={saveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
-              {/* Visibility */}
-              <div style={{ display: 'flex', background: '#111', border: '1px solid #222', borderRadius: '8px', padding: '3px', gap: '3px' }}>
-                {(['public', 'private'] as const).map(v => (
-                  <button key={v} type="button" onClick={() => setEditVisibility(v)} style={{ flex: 1, padding: '7px', border: 'none', borderRadius: '6px', cursor: 'pointer', background: editVisibility === v ? '#1e1e1e' : 'transparent', color: editVisibility === v ? '#f0ece4' : '#555', fontSize: '13px', fontWeight: 600 }}>
-                    {v === 'public' ? '🌐 Public' : '🔒 Private'}
-                  </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+
+          {/* Recent profile views */}
+          <div>
+            <div style={{ fontSize: 10, fontFamily: 'monospace', color: C.gray, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>Recent Profile Views</div>
+            {recentViews.length === 0
+              ? <div style={{ background: C.slate, border: `1px dashed ${C.border}`, borderRadius: 12, padding: '32px 20px', textAlign: 'center', color: C.gray, fontSize: 13 }}>No views yet — share your profile!</div>
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {recentViews.map((v, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: C.slate, borderRadius: i === 0 ? '12px 12px 0 0' : i === recentViews.length - 1 ? '0 0 12px 12px' : '0', border: `1px solid ${C.border}`, borderTop: i === 0 ? `1px solid ${C.border}` : 'none' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.charcoal, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>👔</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.filmLight }}>{v.managers?.name || 'A manager'}</div>
+                      {v.managers?.company && <div style={{ fontSize: 11, color: C.gray }}>{v.managers.company}</div>}
+                    </div>
+                  </div>
                 ))}
               </div>
-              <input style={inp} placeholder="Title *" value={editTitle} onChange={e => setEditTitle(e.target.value)} required />
-              <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder="Description" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <input style={inp} placeholder="Timeline" value={editTimeline} onChange={e => setEditTimeline(e.target.value)} />
-                <select style={{ ...inp, appearance: 'none' }} value={editPayType} onChange={e => setEditPayType(e.target.value)}>
-                  {Object.entries(PAY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
+            }
+          </div>
+
+          {/* Recent applications */}
+          <div>
+            <div style={{ fontSize: 10, fontFamily: 'monospace', color: C.gray, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>Recent Applications</div>
+            {recentSubs.length === 0
+              ? <div style={{ background: C.slate, border: `1px dashed ${C.border}`, borderRadius: 12, padding: '32px 20px', textAlign: 'center', color: C.gray, fontSize: 13 }}>No applications yet — browse open projects!</div>
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {recentSubs.slice(0, 5).map((s, i, arr) => {
+                  const st = subStatus[s.status] || subStatus.pending
+                  return (
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: C.slate, borderRadius: i === 0 ? '12px 12px 0 0' : i === arr.length - 1 ? '0 0 12px 12px' : '0', border: `1px solid ${C.border}`, borderTop: i === 0 ? `1px solid ${C.border}` : 'none' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.filmLight, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(s as any).manager_projects?.title || 'Project'}</div>
+                        <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0 }}>{st.label}</span>
+                    </div>
+                  )
+                })}
               </div>
-              <input style={inp} placeholder="Video URL (Loom, YouTube, etc.) — optional" value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)} />
-              {/* Skills */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input style={{ ...inp, flex: 1 }} placeholder="Add skill, press Enter" value={editSkillInput} onChange={e => setEditSkillInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (editSkillInput.trim() && !editSkills.includes(editSkillInput.trim())) setEditSkills(p => [...p, editSkillInput.trim()]); setEditSkillInput('') } }} />
-                <button type="button" onClick={() => { if (editSkillInput.trim() && !editSkills.includes(editSkillInput.trim())) setEditSkills(p => [...p, editSkillInput.trim()]); setEditSkillInput('') }}
-                  style={{ padding: '8px 14px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Add</button>
-              </div>
-              {editSkills.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {editSkills.map(s => <span key={s} onClick={() => setEditSkills(p => p.filter(x => x !== s))} style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: '#c8ff00', cursor: 'pointer' }}>{s} ✕</span>)}
-                </div>
-              )}
-              {/* Status */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Status</label>
-                <select style={{ ...inp, appearance: 'none' }} value={editStatus} onChange={e => setEditStatus(e.target.value as ManagerProject['status'])}>
-                  <option value="open">🟢 Open</option>
-                  <option value="draft">📝 Draft</option>
-                  <option value="closed">🔴 Closed</option>
-                </select>
-              </div>
-              {/* Reassign */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '5px' }}>Reassign to @username <span style={{ color: '#444' }}>(leave blank to keep current)</span></label>
-                <input style={inp} placeholder="@username" value={editAssignee} onChange={e => setEditAssignee(e.target.value)} />
-              </div>
-              {saveError && <div style={{ color: '#ff6b6b', fontSize: '13px' }}>{saveError}</div>}
-              <button type="submit" disabled={saving} style={{ padding: '11px', background: '#c8ff00', color: '#0a0a0a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
-            </form>
+            }
           </div>
         </div>
-      )}
-
-      {/* Projects list */}
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#444', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #1a1a1a' }}>
-        My Projects ({projects.length})
       </div>
-
-      {projects.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#555', padding: '40px', fontSize: '14px' }}>No projects yet.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {projects.map(p => {
-            const subs = submissions[p.id] || []
-            const isExpanded = expandedProject === p.id
-            return (
-              <div key={p.id} style={{ background: '#0f0f0f', border: '1px solid #1e1e1e', borderRadius: '12px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f0ece4', marginBottom: '4px' }}>{p.title}</div>
-                    <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>
-                      {p.video_url && <><a href={p.video_url} target="_blank" rel="noreferrer" style={{ color: '#c8ff00', textDecoration: 'none' }}>▶ video</a>{' · '}</>}{p.timeline && `⏱ ${p.timeline} · `}
-                      {p.visibility === 'private' ? '🔒 Private' : '🌐 Public'}
-                      {p.assigned_to && ' · Assigned'}
-                      {' · '}
-                      <span style={{ color: p.status === 'open' ? '#4caf50' : p.status === 'closed' ? '#f44336' : '#888' }}>
-                        {p.status === 'open' ? '🟢 Open' : p.status === 'closed' ? '🔴 Closed' : '📝 Draft'}
-                      </span>
-                    </div>
-                    {p.skills_required?.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {p.skills_required.slice(0, 4).map(s => <span key={s} style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: '#c8ff00' }}>{s}</span>)}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', flexShrink: 0 }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: '#c8ff00' }}>
-                      {PAY_LABEL[p.pay_type || ''] || p.pay_type}
-                    </span>
-                    <button onClick={() => startEdit(p)} style={{ fontSize: '12px', color: '#888', background: '#111', border: '1px solid #222', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
-                      ✎ Edit
-                    </button>
-                    <button onClick={() => setExpandedProject(isExpanded ? null : p.id)} style={{ fontSize: '12px', color: subs.length > 0 ? '#c8ff00' : '#555', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>
-                      {subs.length} submission{subs.length !== 1 ? 's' : ''} {isExpanded ? '▲' : '▼'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Submissions panel */}
-                {isExpanded && subs.length > 0 && (
-                  <div style={{ borderTop: '1px solid #1a1a1a', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {subs.map(s => {
-                      const prof = (s as unknown as { profiles?: { first_name?: string; last_name?: string; username?: string; job_title?: string } }).profiles
-                      return (
-                        <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', padding: '10px 12px', background: '#111', borderRadius: '8px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0ece4' }}>
-                              {prof ? `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || `@${prof.username}` : 'Unknown'}
-                            </div>
-                            {prof?.job_title && <div style={{ fontSize: '11px', color: '#555', marginBottom: '4px' }}>{prof.job_title}</div>}
-                            {s.note && <div style={{ fontSize: '12px', color: '#777', marginBottom: '4px' }}>{s.note}</div>}
-                            {s.submission_url && <a href={s.submission_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none', marginRight: '10px' }}>🔗 View work</a>}
-                            {s.video_url && <a href={s.video_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#c8ff00', textDecoration: 'none' }}>▶ Watch video</a>}
-                            <div style={{ fontSize: '11px', color: '#444', marginTop: '4px' }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            {s.status === 'pending' ? (
-                              <>
-                                <button onClick={() => updateSubmissionStatus(s.id, 'accepted')} style={{ padding: '5px 12px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: '#c8ff00', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Accept</button>
-                                <button onClick={() => updateSubmissionStatus(s.id, 'rejected')} style={{ padding: '5px 12px', background: 'rgba(255,100,100,0.08)', border: '1px solid rgba(255,100,100,0.25)', color: '#ff6b6b', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Reject</button>
-                              </>
-                            ) : (
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: s.status === 'accepted' ? '#c8ff00' : '#ff6b6b' }}>
-                                {s.status === 'accepted' ? '✓ Accepted' : '✕ Rejected'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-      {showEditProfile && manager && (
-        <EditManagerModal
-          manager={manager}
-          onClose={() => setShowEditProfile(false)}
-          onSaved={(m) => setManager(m)}
-        />
-      )}
     </div>
   )
 }
