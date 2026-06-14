@@ -1,439 +1,99 @@
 'use client';
 import React, { useState } from 'react';
-import {
-  ExternalLink, Code, Play, Award, Eye, Heart, Share2, ChevronRight,
-  Filter, Grid, List, Calendar
-} from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// ===== PORTFOLIO PAGE (Project Showcase) =====
+const C = { obsidian: '#0a0a0a', slate: '#1a1a1a', filmLight: '#f0ece4', lime: '#c8ff00', gray: '#888', border: '#2a2a2a', charcoal: '#2d2d2d' };
+
+const PROJECTS = [
+  { id: 1, title: 'E-Commerce Platform', category: 'Web', desc: 'Full-stack Next.js shop with Stripe, real-time inventory, and 99.9% uptime serving 10k+ users.', skills: ['Next.js', 'Stripe', 'PostgreSQL', 'Redis'], emoji: '🛒', impact: '$2.4M revenue processed', views: 1240, saves: 89 },
+  { id: 2, title: 'AI Analytics Dashboard', category: 'AI/ML', desc: 'ML-powered dashboard with predictive insights, D3 visualizations, and real-time data streaming.', skills: ['React', 'Python', 'TensorFlow', 'D3.js'], emoji: '🤖', impact: '40% reduction in decision time', views: 2100, saves: 156 },
+  { id: 3, title: 'Mobile Banking App', category: 'Mobile', desc: 'React Native app with biometric auth, real-time transactions, and sub-100ms response times.', skills: ['React Native', 'Node.js', 'AWS', 'Plaid'], emoji: '📱', impact: '50k active users', views: 890, saves: 67 },
+  { id: 4, title: 'Design System', category: 'Design', desc: 'Comprehensive design system with 200+ components, dark/light modes, and WCAG AA compliance.', skills: ['Figma', 'React', 'Storybook', 'TypeScript'], emoji: '🎨', impact: '60% faster design cycles', views: 3200, saves: 210 },
+];
+
+const CATEGORIES = ['All', 'Web', 'Mobile', 'Design', 'AI/ML'];
+
 export const PortfolioPage = () => {
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [cat, setCat] = useState('All');
+  const [selected, setSelected] = useState<any>(null);
 
-  const categories = ['All', 'Web', 'Mobile', 'Design', 'AI/ML'];
-
-  const projects = [
-    {
-      id: 1,
-      title: 'Real-time Analytics Dashboard',
-      category: 'Web',
-      description: 'Built a comprehensive analytics platform for e-commerce businesses. Real-time data visualization with WebSockets, predictive analytics using ML models.',
-      skills: ['React', 'Node.js', 'PostgreSQL', 'WebSockets', 'TensorFlow'],
-      image: 'https://via.placeholder.com/600x400',
-      demoUrl: 'https://example.com',
-      githubUrl: 'https://github.com/example',
-      videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
-      completionDate: '2024-03',
-      impact: 'Increased client revenue by 40% in first month',
-      views: 430,
-      saves: 120,
-      testimonial: '"This dashboard transformed how we understand our customers." — CEO, TechCorp',
-      testimonialAuthor: 'Sarah Johnson',
-      testimonialRole: 'CEO, TechCorp',
-    },
-    {
-      id: 2,
-      title: 'Mobile Fitness Tracking App',
-      category: 'Mobile',
-      description: 'Native iOS app with real-time workout tracking, AI-powered form analysis using computer vision, and social features.',
-      skills: ['Swift', 'CoreML', 'Firebase', 'ARKit'],
-      image: 'https://via.placeholder.com/600x400/ff006e/0a0a0a',
-      demoUrl: 'https://example.com',
-      githubUrl: 'https://github.com/example',
-      videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
-      completionDate: '2024-01',
-      impact: '50k+ downloads in first month',
-      views: 620,
-      saves: 240,
-      testimonial: `"Best fitness app I've used. The AI form detection is incredible." — User Review`,
-      testimonialAuthor: '⭐⭐⭐⭐⭐ 4.8/5',
-      testimonialRole: 'App Store',
-    },
-    {
-      id: 3,
-      title: 'Design System for SaaS Platform',
-      category: 'Design',
-      description: 'Created comprehensive design system with 200+ components, documentation, and code generation.',
-      skills: ['Figma', 'Design Systems', 'Component Design', 'Documentation'],
-      image: 'https://via.placeholder.com/600x400/00f5ff/0a0a0a',
-      demoUrl: 'https://example.com',
-      githubUrl: 'https://github.com/example',
-      videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
-      completionDate: '2023-11',
-      impact: 'Reduced design-to-development time by 60%',
-      views: 890,
-      saves: 450,
-      testimonial: '"This design system is beautiful and incredibly functional." — Design Lead',
-      testimonialAuthor: 'Alex Chen',
-      testimonialRole: 'Design Lead, StartupXYZ',
-    },
-    {
-      id: 4,
-      title: 'AI Content Generation Engine',
-      category: 'AI/ML',
-      description: 'Fine-tuned GPT-3 model for generating product descriptions, marketing copy, and social media content.',
-      skills: ['Python', 'OpenAI API', 'Fine-tuning', 'Prompt Engineering'],
-      image: 'https://via.placeholder.com/600x400/c8ff00/0a0a0a',
-      demoUrl: 'https://example.com',
-      githubUrl: 'https://github.com/example',
-      videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
-      completionDate: '2024-02',
-      impact: 'Generated 10k+ pieces of content with 95% approval rate',
-      views: 340,
-      saves: 85,
-      testimonial: '"Saves us 20 hours per week on content creation." — Marketing Manager',
-      testimonialAuthor: 'Jamie Smith',
-      testimonialRole: 'Marketing Manager, ContentCo',
-    },
-  ];
-
-  const filteredProjects = selectedCategory === 'all'
-    ? projects
-    : projects.filter(p => p.category === selectedCategory);
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
-  };
+  const filtered = PROJECTS.filter(p => cat === 'All' || p.category === cat);
 
   return (
-    <div className="bg-[#0a0a0a] text-[#f0ece4] min-h-screen">
-      {/* ===== HEADER HERO ===== */}
-      <section className="relative py-20 px-6 md:px-16 border-b border-[#2d2d2d] overflow-hidden">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]" />
+    <div style={{ background: C.obsidian, minHeight: '100vh', color: C.filmLight, fontFamily: 'Inter, sans-serif' }}>
 
-        <motion.div
-          className="relative max-w-4xl mx-auto text-center space-y-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <div className="inline-block px-4 py-2 bg-[#1a1a1a] rounded-full border border-[#c8ff00]">
-            <p className="text-sm font-mono text-[#c8ff00] uppercase tracking-widest">
-              12 Featured Works
-            </p>
-          </div>
+      {/* Header */}
+      <div style={{ borderBottom: `1px solid ${C.border}`, padding: '40px 40px 32px' }}>
+        <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.lime, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: 8 }}>Portfolio</div>
+        <h1 style={{ fontSize: 'clamp(32px, 5vw, 56px)', fontFamily: 'monospace', fontWeight: 700, margin: '0 0 24px' }}>Selected Work</h1>
 
-          <h1 className="text-5xl md:text-6xl font-bold" style={{ fontFamily: 'Space Mono' }}>
-            Featured Projects
-          </h1>
-
-          <p className="text-lg text-[#2d2d2d] max-w-2xl mx-auto">
-            A curated collection of work across web, mobile, design, and AI. Each project represents deep technical expertise and measurable impact.
-          </p>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-6 pt-8 mt-8 border-t border-[#2d2d2d]">
-            {[
-              { value: '12', label: 'Projects' },
-              { value: '4.2M', label: 'Impact Hours Saved' },
-              { value: '98%', label: 'Client Satisfaction' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-3xl font-bold text-[#c8ff00]">{stat.value}</div>
-                <div className="text-xs uppercase tracking-widest text-[#2d2d2d] mt-2">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ===== FILTERS & VIEW MODE ===== */}
-      <section className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur border-b border-[#2d2d2d] py-4 px-6 md:px-16">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          {/* Category Filters */}
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            {categories.map((cat, i) => (
-              <motion.button
-                key={i}
-                onClick={() => setSelectedCategory(cat === 'All' ? 'all' : cat)}
-                className={`px-4 py-2 rounded-lg font-mono text-sm uppercase tracking-wider whitespace-nowrap transition-all ${
-                  (cat === 'All' ? selectedCategory === 'all' : selectedCategory === cat)
-                    ? 'bg-[#c8ff00] text-[#0a0a0a]'
-                    : 'bg-[#1a1a1a] text-[#2d2d2d] border border-[#2d2d2d] hover:border-[#c8ff00]'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {cat}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex gap-2 bg-[#1a1a1a] rounded-lg p-1 border border-[#2d2d2d]">
-            <motion.button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-[#c8ff00] text-[#0a0a0a]'
-                  : 'text-[#2d2d2d] hover:text-[#f0ece4]'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Grid size={20} />
-            </motion.button>
-            <motion.button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-all ${
-                viewMode === 'list'
-                  ? 'bg-[#c8ff00] text-[#0a0a0a]'
-                  : 'text-[#2d2d2d] hover:text-[#f0ece4]'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <List size={20} />
-            </motion.button>
-          </div>
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 40, marginBottom: 28, flexWrap: 'wrap' }}>
+          {[{ label: 'Projects', value: '12' }, { label: 'Clients', value: '8' }, { label: 'Years', value: '4' }].map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'monospace', color: C.lime }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: C.gray, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</div>
+            </div>
+          ))}
         </div>
-      </section>
 
-      {/* ===== PROJECTS GRID ===== */}
-      <section className="py-16 px-6 md:px-16">
-        <motion.div
-          className={`max-w-7xl mx-auto ${
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-8'
-              : 'space-y-6'
-          }`}
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {filteredProjects.map((project, i) => (
-            <motion.div
-              key={project.id}
-              variants={itemVariants}
-              onClick={() => setSelectedProject(project)}
-              className="group cursor-pointer"
-            >
-              <div className={`
-                bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] rounded-xl overflow-hidden
-                border border-[#2d2d2d] hover:border-[#c8ff00] transition-all duration-300
-                ${viewMode === 'list' ? 'flex gap-6' : ''}
-              `}>
-                {/* Project Image */}
-                <div className={`
-                  relative bg-[#0a0a0a] overflow-hidden
-                  ${viewMode === 'grid' ? 'h-64 w-full' : 'h-48 w-48 flex-shrink-0'}
-                `}>
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+        {/* Category filter */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {CATEGORIES.map(c => (
+            <button key={c} onClick={() => setCat(c)} style={{ background: cat === c ? C.lime : 'transparent', color: cat === c ? C.obsidian : C.gray, border: `1px solid ${cat === c ? C.lime : C.border}`, borderRadius: 20, padding: '6px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>{c}</button>
+          ))}
+        </div>
+      </div>
 
-                  {/* Film Strip Frame */}
-                  <div className="absolute top-0 left-0 right-0 h-3 flex gap-1 px-2 justify-center bg-[#0a0a0a]">
-                    {[...Array(20)].map((_, j) => (
-                      <div key={j} className="w-0.5 h-2 bg-[#2d2d2d]" />
-                    ))}
-                  </div>
-
-                  {/* Play Button Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-all">
-                    <motion.div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="w-16 h-16 rounded-full bg-[#c8ff00] flex items-center justify-center shadow-2xl">
-                        <Play className="w-6 h-6 text-[#0a0a0a] fill-current ml-1" />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Category Badge */}
-                  <div className="absolute top-6 right-6 px-3 py-1 bg-[#0a0a0a]/80 backdrop-blur rounded-full text-xs font-mono uppercase tracking-widest text-[#c8ff00] border border-[#c8ff00]">
-                    {project.category}
-                  </div>
-
-                  {/* Engagement Stats */}
-                  <div className="absolute bottom-6 left-6 flex gap-4 text-xs">
-                    <div className="flex items-center gap-1 bg-[#0a0a0a]/80 backdrop-blur px-2 py-1 rounded-full border border-[#2d2d2d]">
-                      <Eye size={14} className="text-[#00f5ff]" />
-                      <span>{project.views}</span>
-                    </div>
-                    <div className="flex items-center gap-1 bg-[#0a0a0a]/80 backdrop-blur px-2 py-1 rounded-full border border-[#2d2d2d]">
-                      <Heart size={14} className="text-[#ff006e]" />
-                      <span>{project.saves}</span>
-                    </div>
-                  </div>
+      {/* Grid */}
+      <div style={{ padding: '32px 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+          {filtered.map((p, i) => (
+            <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+              onClick={() => setSelected(p)}
+              whileHover={{ y: -6 }}
+              style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s' }}>
+              <div style={{ height: 160, background: 'linear-gradient(135deg, #0a0a0a, #0d1500)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 60 }}>{p.emoji}</div>
+              <div style={{ padding: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>{p.title}</div>
+                  <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime, fontWeight: 700 }}>{p.category}</span>
                 </div>
-
-                {/* Project Info */}
-                <div className={`p-6 flex flex-col justify-between ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <div className="space-y-3">
-                    <h3 className="text-2xl font-bold group-hover:text-[#c8ff00] transition-colors" style={{ fontFamily: 'Space Mono' }}>
-                      {project.title}
-                    </h3>
-
-                    <p className="text-[#2d2d2d] leading-relaxed">
-                      {project.description}
-                    </p>
-
-                    {/* Skills */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {project.skills.slice(0, 4).map((skill, j) => (
-                        <span
-                          key={j}
-                          className="px-2 py-1 text-xs bg-[#0a0a0a] text-[#c8ff00] rounded-full border border-[#c8ff00] font-mono"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                      {project.skills.length > 4 && (
-                        <span className="px-2 py-1 text-xs text-[#2d2d2d] font-mono">
-                          +{project.skills.length - 4} more
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Impact */}
-                    <div className="pt-2 border-t border-[#2d2d2d]">
-                      <p className="text-sm text-[#c8ff00] font-mono uppercase tracking-widest">Impact</p>
-                      <p className="text-[#f0ece4] text-sm mt-1">{project.impact}</p>
-                    </div>
-                  </div>
-
-                  {/* Action Links */}
-                  <div className="flex gap-3 pt-4 mt-4 border-t border-[#2d2d2d]">
-                    <a
-                      href={project.demoUrl}
-                      className="flex-1 px-4 py-2 bg-[#c8ff00] text-[#0a0a0a] rounded-lg font-mono text-sm uppercase tracking-wide hover:scale-105 transition-all flex items-center justify-center gap-2"
-                    >
-                      <ExternalLink size={16} /> Live Demo
-                    </a>
-                    <a
-                      href={project.githubUrl}
-                      className="flex-1 px-4 py-2 bg-[#1a1a1a] text-[#c8ff00] rounded-lg border border-[#c8ff00] font-mono text-sm uppercase tracking-wide hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all flex items-center justify-center gap-2"
-                    >
-                      <Code size={16} /> Code
-                    </a>
-                  </div>
+                <p style={{ fontSize: 13, color: C.gray, lineHeight: 1.6, margin: '0 0 14px' }}>{p.desc}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
+                  {p.skills.slice(0, 3).map(s => <span key={s} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, color: C.gray }}>{s}</span>)}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.charcoal }}>
+                  <span>👁 {p.views}</span><span>🔖 {p.saves}</span>
                 </div>
               </div>
             </motion.div>
           ))}
-        </motion.div>
-      </section>
+        </div>
+      </div>
 
-      {/* ===== PROJECT DETAIL MODAL ===== */}
-      {selectedProject && (
-        <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setSelectedProject(null)}
-        >
-          <motion.div
-            className="bg-[#1a1a1a] border border-[#2d2d2d] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative h-96 bg-[#0a0a0a]">
-              <img
-                src={selectedProject.image}
-                alt={selectedProject.title}
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-4 right-4 p-2 bg-[#0a0a0a]/80 rounded-lg text-[#c8ff00] hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all"
-              >
-                ✕
-              </button>
-
-              {/* Play Button */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div whileHover={{ scale: 1.1 }}>
-                  <div className="w-20 h-20 rounded-full bg-[#c8ff00] flex items-center justify-center shadow-2xl cursor-pointer">
-                    <Play className="w-8 h-8 text-[#0a0a0a] fill-current ml-1" />
-                  </div>
-                </motion.div>
+      {/* Modal */}
+      {selected && (
+        <div onClick={() => setSelected(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 24 }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()}
+            style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 20, width: '100%', maxWidth: 600, overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ height: 200, background: 'linear-gradient(135deg, #0a0a0a, #0d1500)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>{selected.emoji}</div>
+            <div style={{ padding: 32 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{selected.title}</h2>
+                <button onClick={() => setSelected(null)} style={{ background: C.charcoal, border: 'none', color: C.gray, width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
               </div>
-            </div>
-
-            <div className="p-8 space-y-6">
-              <div>
-                <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Space Mono' }}>
-                  {selectedProject.title}
-                </h2>
-                <p className="text-[#c8ff00] font-mono uppercase tracking-widest text-sm">
-                  {selectedProject.category} • {selectedProject.completionDate}
-                </p>
+              <p style={{ fontSize: 15, color: C.gray, lineHeight: 1.7, marginBottom: 20 }}>{selected.desc}</p>
+              <div style={{ background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.15)', borderRadius: 10, padding: '14px 18px', marginBottom: 20 }}>
+                <div style={{ fontSize: 11, color: C.lime, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Impact</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.impact}</div>
               </div>
-
-              <p className="text-[#2d2d2d] leading-relaxed text-lg">
-                {selectedProject.description}
-              </p>
-
-              <div>
-                <p className="text-xs uppercase tracking-widest text-[#2d2d2d] mb-3">Technologies Used</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedProject.skills.map((skill, i) => (
-                    <span key={i} className="px-3 py-1 bg-[#0a0a0a] text-[#c8ff00] rounded-full text-xs font-mono border border-[#c8ff00]">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Testimonial */}
-              <div className="bg-gradient-to-r from-[#0a0a0a] to-[#1a1a1a] p-6 rounded-lg border border-[#2d2d2d]">
-                <p className="text-[#f0ece4] italic mb-3">"{selectedProject.testimonial}"</p>
-                <div>
-                  <p className="font-bold">{selectedProject.testimonialAuthor}</p>
-                  <p className="text-xs text-[#2d2d2d] font-mono">{selectedProject.testimonialRole}</p>
-                </div>
-              </div>
-
-              <div className="border-t border-[#2d2d2d] pt-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <a
-                    href={selectedProject.demoUrl}
-                    className="px-4 py-3 bg-[#c8ff00] text-[#0a0a0a] rounded-lg font-bold uppercase tracking-wide hover:scale-105 transition-all flex items-center justify-center gap-2"
-                  >
-                    <ExternalLink size={18} /> View Live
-                  </a>
-                  <a
-                    href={selectedProject.githubUrl}
-                    className="px-4 py-3 bg-[#1a1a1a] text-[#c8ff00] rounded-lg border border-[#c8ff00] font-bold uppercase tracking-wide hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all flex items-center justify-center gap-2"
-                  >
-                    <Code size={18} /> GitHub
-                  </a>
-                </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {selected.skills.map((s: string) => <span key={s} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime }}>{s}</span>)}
               </div>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
