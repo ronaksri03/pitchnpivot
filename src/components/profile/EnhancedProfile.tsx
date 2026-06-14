@@ -1,342 +1,145 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, Heart, MessageSquare, Share2, Download, ArrowDown, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
-// ===== ENHANCED INDIVIDUAL PROFILE (Video CV) =====
-export const EnhancedProfile = ({ individual, manager }) => {
-  const [videoPlaying, setVideoPlaying] = useState(false);
+const C = {
+  obsidian: '#0a0a0a', slate: '#1a1a1a', charcoal: '#2d2d2d',
+  filmLight: '#f0ece4', lime: '#c8ff00', magenta: '#ff006e',
+  cyan: '#00f5ff', gray: '#888', border: '#2a2a2a',
+};
+
+export const EnhancedProfile = ({ individual, manager }: { individual: any; manager?: any }) => {
   const [activeTab, setActiveTab] = useState('projects');
-  const [showSaved, setShowSaved] = useState(false);
-  const videoRef = useRef(null);
 
   return (
-    <div className="bg-[#0a0a0a] text-[#f0ece4] min-h-screen overflow-hidden">
-      {/* ===== HERO: FULL-SCREEN VIDEO CV ===== */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden group">
-        {/* Video Container with Film Strip Frame */}
-        <div className="relative w-full h-full flex items-center justify-center">
-          {/* Film Strip Frame Border (Signature Element) */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-8 bg-[#0a0a0a] flex gap-2 px-4 items-center">
-              {[...Array(40)].map((_, i) => (
-                <div key={i} className="w-1 h-4 bg-[#2d2d2d] rounded-xs" />
-              ))}
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-8 bg-[#0a0a0a] flex gap-2 px-4 items-center">
-              {[...Array(40)].map((_, i) => (
-                <div key={i} className="w-1 h-4 bg-[#2d2d2d] rounded-xs" />
-              ))}
-            </div>
+    <div style={{ background: C.obsidian, color: C.filmLight, minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+
+      {/* HERO */}
+      <section style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0a0a0a 0%, #0d1500 50%, #0a0a0a 100%)' }} />
+
+        {/* Film strip top */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 32, background: C.slate, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', zIndex: 10, overflow: 'hidden' }}>
+          {Array.from({ length: 30 }).map((_, i) => <div key={i} style={{ width: 20, height: 14, borderRadius: 3, background: C.obsidian, flexShrink: 0 }} />)}
+        </div>
+        {/* Film strip bottom */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 32, background: C.slate, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', zIndex: 10, overflow: 'hidden' }}>
+          {Array.from({ length: 30 }).map((_, i) => <div key={i} style={{ width: 20, height: 14, borderRadius: 3, background: C.obsidian, flexShrink: 0 }} />)}
+        </div>
+
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <iframe src={individual.introVideoUrl} style={{ width: '100%', height: '100%', border: 'none', opacity: 0.4 }} allow="autoplay" allowFullScreen />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, #0a0a0a 100%)' }} />
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
+          style={{ position: 'relative', zIndex: 5, textAlign: 'center', padding: '0 24px', maxWidth: 800 }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.lime, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 16 }}>VIDEO CV</div>
+          <h1 style={{ fontSize: 'clamp(40px, 8vw, 80px)', fontFamily: 'monospace', fontWeight: 700, margin: '0 0 12px', letterSpacing: '-0.02em', lineHeight: 1 }}>{individual.name}</h1>
+          <p style={{ fontSize: 20, color: C.gray, margin: '0 0 32px' }}>{individual.jobTitle}</p>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 50, padding: '12px 28px', backdropFilter: 'blur(10px)', marginBottom: 24, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: C.gray }}>📍 {individual.location}</span>
+            <span style={{ fontSize: 13, color: C.gray }}>⏱ {individual.yearsExp} yrs exp</span>
+            <span style={{ fontSize: 13, color: C.lime, fontWeight: 700 }}>💰 ${individual.hourlyRate}/hr</span>
+            <span style={{ fontSize: 13, color: C.gray }}>📅 {individual.availability}</span>
           </div>
-
-          {/* Video Background */}
-          <motion.div 
-            className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] via-[#0a0a0a] to-[#0a0a0a]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
-          >
-            <video
-              ref={videoRef}
-              src={individual.introVideoUrl}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              onPlay={() => setVideoPlaying(true)}
-            />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
-          </motion.div>
-
-          {/* Hero Content Overlay */}
-          <motion.div 
-            className="absolute inset-0 flex flex-col justify-between p-8 md:p-16 z-20"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          >
-            {/* Top: Name & Role */}
-            <div className="space-y-4">
-              <h1 className="text-6xl md:text-7xl font-bold tracking-tight" style={{ fontFamily: 'Space Mono' }}>
-                {individual.name}
-              </h1>
-              <p className="text-2xl md:text-3xl text-[#c8ff00] font-medium">
-                {individual.jobTitle}
-              </p>
+          {manager && (
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button style={{ background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>💬 Message</button>
+              <button style={{ background: 'transparent', color: C.filmLight, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 28px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>📄 Download CV</button>
             </div>
+          )}
+        </motion.div>
 
-            {/* Bottom: Quick Info + CTA */}
-            <div className="flex items-end justify-between">
-              <div className="space-y-3">
-                <div className="flex gap-4 text-sm uppercase tracking-wide">
-                  <span className="px-3 py-1 bg-[#c8ff00] text-[#0a0a0a] rounded-full font-bold">
-                    {individual.yearsExp}y exp
-                  </span>
-                  <span className="px-3 py-1 bg-[#1a1a1a] text-[#c8ff00] rounded-full border border-[#c8ff00]">
-                    {individual.location}
-                  </span>
-                  <span className="px-3 py-1 bg-[#1a1a1a] text-[#00f5ff] rounded-full border border-[#00f5ff]">
-                    {individual.availability}
-                  </span>
-                </div>
-                <p className="text-lg text-[#f0ece4] max-w-md">
-                  "{individual.lookingFor}"
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              {manager ? (
-                <motion.div 
-                  className="flex gap-3"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <button className="p-3 bg-[#c8ff00] text-[#0a0a0a] rounded-lg hover:bg-[#b8ef00] transition-all hover:scale-110">
-                    <MessageSquare size={24} />
-                  </button>
-                  <button className="p-3 bg-[#ff006e] text-white rounded-lg hover:bg-[#ff1e7f] transition-all hover:scale-110">
-                    <Heart size={24} />
-                  </button>
-                  <button className="px-6 py-3 bg-[#c8ff00] text-[#0a0a0a] rounded-lg font-bold hover:scale-105 transition-all flex gap-2 items-center">
-                    View Projects <ChevronRight size={20} />
-                  </button>
-                </motion.div>
-              ) : (
-                <div className="flex gap-3">
-                  <motion.button 
-                    className="px-6 py-3 bg-[#c8ff00] text-[#0a0a0a] rounded-lg font-bold hover:scale-105 transition-all"
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Sign in to hire
-                  </motion.button>
-                </div>
-              )}
+        <div style={{ position: 'absolute', bottom: 48, left: 40, zIndex: 5, display: 'flex', gap: 32 }}>
+          {[{ label: 'Projects', value: individual.projectsCompleted }, { label: 'Profile Views', value: individual.profileViews }].map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'monospace', color: C.lime }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: C.gray, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</div>
             </div>
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div 
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30"
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-xs uppercase tracking-widest text-[#2d2d2d]">Scroll</span>
-              <ArrowDown size={20} className="text-[#c8ff00]" />
-            </div>
-          </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* ===== ABOUT SECTION ===== */}
-      <section className="py-20 px-8 md:px-16 bg-[#0a0a0a] border-t border-[#2d2d2d]">
-        <div className="max-w-4xl mx-auto space-y-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="space-y-4"
-          >
-            <h2 className="text-4xl font-bold" style={{ fontFamily: 'Space Mono' }}>About</h2>
-            <p className="text-lg leading-relaxed text-[#2d2d2d]">{individual.bio}</p>
-          </motion.div>
+      {/* BODY */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '60px 24px' }}>
 
-          {/* Skills */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="space-y-4"
-          >
-            <h3 className="text-2xl font-bold" style={{ fontFamily: 'Space Mono' }}>Skills</h3>
-            <div className="flex flex-wrap gap-3">
-              {individual.skills.map((skill, i) => (
-                <motion.span
-                  key={i}
-                  className="px-4 py-2 bg-[#1a1a1a] text-[#c8ff00] rounded-full text-sm font-mono border border-[#c8ff00] cursor-pointer hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {skill}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 pt-12 border-t border-[#2d2d2d]"
-          >
-            {[
-              { label: 'Projects Done', value: individual.projectsCompleted || 12 },
-              { label: 'Profile Views', value: individual.profileViews || 284 },
-              { label: 'Hourly Rate', value: `$${individual.hourlyRate}` },
-              { label: 'Response Time', value: '< 2 hrs' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl font-bold text-[#c8ff00]">{stat.value}</div>
-                <div className="text-xs uppercase tracking-widest text-[#2d2d2d] mt-2">{stat.label}</div>
-              </div>
+        {/* Skills */}
+        <div style={{ marginBottom: 48 }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.lime, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 16 }}>Stack</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {individual.skills.map((skill: string, i: number) => (
+              <span key={i} style={{ background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.25)', color: C.lime, borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 600 }}>{skill}</span>
             ))}
-          </motion.div>
+          </div>
         </div>
-      </section>
 
-      {/* ===== REELS/VIDEOS SECTION ===== */}
-      <section className="py-20 px-8 md:px-16 bg-[#1a1a1a] border-t border-[#2d2d2d]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-6xl mx-auto"
-        >
-          <h2 className="text-4xl font-bold mb-12" style={{ fontFamily: 'Space Mono' }}>
-            Work in Motion
-          </h2>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 2, marginBottom: 32, background: C.slate, border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, width: 'fit-content' }}>
+          {['projects', 'reels', 'about'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: activeTab === tab ? C.obsidian : 'transparent', color: activeTab === tab ? C.filmLight : C.gray, border: 'none', borderRadius: 8, padding: '8px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>{tab}</button>
+          ))}
+        </div>
 
-          {/* Masonry Grid of Reels */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="relative group cursor-pointer h-96 bg-[#0a0a0a] rounded-lg overflow-hidden"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Thumbnail */}
-                <div className="w-full h-full bg-gradient-to-b from-[#2d2d2d] to-[#0a0a0a] flex items-center justify-center relative">
-                  {/* Film Strip Frame */}
-                  <div className="absolute top-2 left-0 right-0 h-3 flex gap-1 px-2 justify-center">
-                    {[...Array(15)].map((_, j) => (
-                      <div key={j} className="w-0.5 h-2 bg-[#2d2d2d]" />
-                    ))}
+        {/* Projects */}
+        {activeTab === 'projects' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            {[{ title: 'E-Commerce Platform', desc: 'Full-stack Next.js with Stripe integration and real-time inventory.', tags: ['Next.js', 'Stripe', 'PostgreSQL'], status: 'Live' },
+              { title: 'AI Dashboard', desc: 'Analytics with ML-powered insights and D3 visualizations.', tags: ['React', 'Python', 'D3.js'], status: 'Live' },
+              { title: 'Mobile Banking App', desc: 'React Native with biometric auth and real-time transactions.', tags: ['React Native', 'Node.js', 'AWS'], status: 'In Progress' }
+            ].map((p, i) => (
+              <motion.div key={i} whileHover={{ y: -4, borderColor: C.lime }} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, cursor: 'pointer', transition: 'border-color 0.2s, transform 0.2s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{p.title}</div>
+                  <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: p.status === 'Live' ? 'rgba(200,255,0,0.1)' : 'rgba(100,150,255,0.1)', border: `1px solid ${p.status === 'Live' ? 'rgba(200,255,0,0.3)' : 'rgba(100,150,255,0.3)'}`, color: p.status === 'Live' ? C.lime : '#7090ff', fontWeight: 700, textTransform: 'uppercase' }}>{p.status}</span>
+                </div>
+                <p style={{ fontSize: 13, color: C.gray, lineHeight: 1.6, margin: '0 0 14px' }}>{p.desc}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  {p.tags.map(t => <span key={t} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, color: C.gray }}>{t}</span>)}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Reels */}
+        {activeTab === 'reels' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+            {[{ title: 'Building a Real-Time Chat', duration: '4:32', views: 1240 },
+              { title: 'AWS Lambda + Next.js', duration: '6:15', views: 890 },
+              { title: 'PostgreSQL Query Optimization', duration: '3:48', views: 2100 }
+            ].map((r, i) => (
+              <motion.div key={i} whileHover={{ y: -3 }} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+                <div style={{ height: 130, background: 'linear-gradient(135deg, #0a0a0a, #0d1500)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.lime, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: C.obsidian, fontSize: 18, marginLeft: 3 }}>▶</span>
                   </div>
-
-                  <div className="text-center">
-                    <Play className="w-16 h-16 text-[#c8ff00] mx-auto mb-3" />
-                    <p className="text-sm text-[#2d2d2d] font-mono">Video {i + 1}</p>
-                  </div>
-
-                  {/* Overlay on Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                    <p className="text-lg font-bold">Project: Design System</p>
-                    <p className="text-xs text-[#2d2d2d] mt-1">3:45</p>
+                </div>
+                <div style={{ padding: '14px 16px' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{r.title}</div>
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: C.gray }}>
+                    <span>⏱ {r.duration}</span><span>👁 {r.views.toLocaleString()}</span>
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
-        </motion.div>
-      </section>
+        )}
 
-      {/* ===== PORTFOLIO PROJECTS ===== */}
-      <section className="py-20 px-8 md:px-16 bg-[#0a0a0a] border-t border-[#2d2d2d]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-6xl mx-auto"
-        >
-          <div className="flex items-center justify-between mb-12">
-            <h2 className="text-4xl font-bold" style={{ fontFamily: 'Space Mono' }}>
-              Featured Projects
-            </h2>
-            <button className="text-[#c8ff00] hover:text-[#b8ef00] font-mono text-sm uppercase tracking-wider flex items-center gap-2">
-              View all <ChevronRight size={16} />
-            </button>
+        {/* About */}
+        {activeTab === 'about' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 14, padding: 28 }}>
+              <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.gray, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Bio</div>
+              <p style={{ fontSize: 15, lineHeight: 1.75, color: '#bbb', margin: 0 }}>{individual.bio}</p>
+            </div>
+            <div style={{ background: 'rgba(200,255,0,0.04)', border: '1px solid rgba(200,255,0,0.15)', borderRadius: 14, padding: 28 }}>
+              <div style={{ fontSize: 11, fontFamily: 'monospace', color: C.lime, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Looking For</div>
+              <p style={{ fontSize: 15, lineHeight: 1.75, color: '#ccc', margin: 0 }}>{individual.lookingFor}</p>
+            </div>
           </div>
-
-          {/* Project Cards */}
-          <div className="space-y-8">
-            {[...Array(3)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="group grid md:grid-cols-3 gap-6 pb-8 border-b border-[#2d2d2d] cursor-pointer"
-                whileHover={{ x: 8 }}
-              >
-                {/* Project Image */}
-                <div className="md:col-span-1 h-48 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] rounded-lg flex items-center justify-center overflow-hidden relative">
-                  <div className="text-center text-[#2d2d2d]">
-                    <div className="text-4xl font-bold">0{i + 1}</div>
-                  </div>
-                  <div className="absolute inset-0 bg-[#c8ff00] opacity-0 group-hover:opacity-10 transition-opacity" />
-                </div>
-
-                {/* Project Info */}
-                <div className="md:col-span-2 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <h3 className="text-2xl font-bold group-hover:text-[#c8ff00] transition-colors">
-                      Project: E-Commerce Dashboard
-                    </h3>
-                    <p className="text-[#2d2d2d] leading-relaxed">
-                      Built a real-time analytics dashboard for an e-commerce platform using React, Node.js, and PostgreSQL. Increased conversion tracking accuracy by 40%.
-                    </p>
-
-                    {/* Skills Used */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {['React', 'Node.js', 'PostgreSQL', 'Tailwind'].map((skill, j) => (
-                        <span key={j} className="text-xs px-2 py-1 bg-[#1a1a1a] text-[#00f5ff] rounded font-mono border border-[#00f5ff]">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Links */}
-                  <div className="flex gap-4 pt-4 mt-4 border-t border-[#2d2d2d]">
-                    <a href="#" className="text-[#c8ff00] hover:underline font-mono text-sm flex items-center gap-2">
-                      View Live <ChevronRight size={14} />
-                    </a>
-                    <a href="#" className="text-[#00f5ff] hover:underline font-mono text-sm flex items-center gap-2">
-                      GitHub <ChevronRight size={14} />
-                    </a>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ===== CALL TO ACTION SECTION ===== */}
-      <section className="py-20 px-8 md:px-16 bg-gradient-to-b from-[#0a0a0a] to-[#1a1a1a] border-t border-[#2d2d2d]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-2xl mx-auto text-center space-y-8"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold" style={{ fontFamily: 'Space Mono' }}>
-            Ready to Collaborate?
-          </h2>
-          <p className="text-lg text-[#2d2d2d]">
-            Explore current projects, send a direct message, or download the full CV.
-          </p>
-
-          <div className="flex flex-col md:flex-row gap-4 justify-center pt-4">
-            <motion.button
-              className="px-8 py-4 bg-[#c8ff00] text-[#0a0a0a] rounded-lg font-bold uppercase tracking-wide flex items-center justify-center gap-2 hover:scale-105 transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <MessageSquare size={20} /> Send Message
-            </motion.button>
-            <motion.button
-              className="px-8 py-4 bg-[#1a1a1a] text-[#c8ff00] rounded-lg font-bold uppercase tracking-wide border border-[#c8ff00] flex items-center justify-center gap-2 hover:bg-[#c8ff00] hover:text-[#0a0a0a] transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Download size={20} /> Download CV
-            </motion.button>
-          </div>
-        </motion.div>
-      </section>
+        )}
+      </div>
     </div>
   );
 };
