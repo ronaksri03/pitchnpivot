@@ -34,7 +34,7 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--color-lime-flash) !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&display=swap');
+
 @import "tailwindcss";
 
 :root {
