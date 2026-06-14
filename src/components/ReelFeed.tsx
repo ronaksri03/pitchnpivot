@@ -1,3 +1,4 @@
+"use client";
 // components/ReelFeed.tsx
 // ─────────────────────────────────────────────────────────────
 // Production Reel Feed. Same "Voltage" design as the preview,
@@ -16,7 +17,6 @@
 // next/font or a <link>. The colors below are your design tokens.
 // ─────────────────────────────────────────────────────────────
 
-"use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Bookmark, Send, Play, Pause, Sparkles, Github, Globe, Check, X, ArrowUpRight, Flame } from "lucide-react";
