@@ -5,6 +5,8 @@
 // Individuals and guests are redirected (same logic as before).
 // ─────────────────────────────────────────────────────────────
 
+export const dynamic = 'force-dynamic';
+
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ReelFeed from "@/components/ReelFeed";
