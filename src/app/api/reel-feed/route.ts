@@ -3,7 +3,7 @@
 // Manager id comes from the session — never trust a client-supplied id.
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { getReelFeed } from "@/lib/reelFeed";
 
 export async function GET(req: Request) {

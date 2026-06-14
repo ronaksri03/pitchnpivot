@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────
 // Data layer for the Reel Feed (/discover, reimagined).
 // Reads from your existing tables: profiles, reels, manager_projects.
-// Assumes a Supabase server client at "@/lib/supabase/server"
+// Assumes a Supabase server client at "@/lib/supabase"
 // (the @supabase/ssr createServerClient pattern you're already using).
 //
 // ── One-time migration (run in Supabase SQL editor) ──────────
@@ -25,7 +25,7 @@
 //   );
 // ─────────────────────────────────────────────────────────────
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 
 export type ReelTalent = {
   id: string;

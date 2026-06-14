@@ -3,7 +3,7 @@
 // Ownership is checked here AND enforced by RLS — defense in depth.
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { inviteToProject } from "@/lib/reelFeed";
 
 export async function POST(req: Request) {

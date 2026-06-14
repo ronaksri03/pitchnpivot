@@ -2,7 +2,7 @@
 // Save or unsave a talent for the logged-in manager.
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase";
 import { toggleSave } from "@/lib/reelFeed";
 
 export async function POST(req: Request) {
