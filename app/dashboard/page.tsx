@@ -1,10 +1,8 @@
-import ManagerDashboard from '@/components/dashboard/ManagerDashboard';
-
-const mockManager = {
-  company: 'TechCorp',
-  role: 'Hiring Manager',
-};
-
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 export default function Page() {
-  return <ManagerDashboard manager={mockManager} />;
+  const router = useRouter();
+  useEffect(() => { router.replace("/dashboard"); }, []);
+  return null;
 }

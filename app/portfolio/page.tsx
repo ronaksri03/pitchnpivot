@@ -1,5 +1,8 @@
-import PortfolioPage from '@/components/portfolio/PortfolioPage';
-
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 export default function Page() {
-  return <PortfolioPage />;
+  const router = useRouter();
+  useEffect(() => { router.replace("/lab"); }, []);
+  return null;
 }
