@@ -19,7 +19,7 @@
 
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Bookmark, Send, Play, Pause, Sparkles, Github, Globe, Check, X, ArrowUpRight, Flame } from "lucide-react";
+import { Bookmark, Send, Play, Pause, Sparkles, Code, Globe, Check, X, ArrowUpRight, Flame } from "lucide-react";
 import { useReelFeed } from "@/hooks/useReelFeed";
 import type { ReelTalent } from "@/lib/reelFeed";
 
@@ -182,7 +182,7 @@ function Reel({
             const h = person.sharedSkills.map((n) => n.toLowerCase()).includes(s.toLowerCase());
             return <span key={s} className="text-[11px] font-semibold px-2 py-1" style={{ background: h ? "rgba(200,255,0,.16)" : "rgba(255,255,255,.06)", color: h ? LIME : "rgba(240,236,228,.65)", border: h ? "1px solid rgba(200,255,0,.35)" : "1px solid transparent" }}>{s}</span>;
           })}
-          {person.github && <span className="text-[11px] inline-flex items-center px-2 py-1" style={{ color: ASH }}><Github size={12} /></span>}
+          {person.github && <span className="text-[11px] inline-flex items-center px-2 py-1" style={{ color: ASH }}><Code size={12} /></span>}
           {person.portfolio && <span className="text-[11px] inline-flex items-center px-2 py-1" style={{ color: ASH }}><Globe size={12} /></span>}
         </div>
 
