@@ -41,7 +41,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/auth')
-    if (!authLoading && user && accountType === 'manager') router.replace('/auth')
+    if (!authLoading && user && accountType === 'manager') router.replace('/lab')
     if (!authLoading && user && accountType === 'individual') loadAll()
   }, [authLoading, user, accountType])
 
