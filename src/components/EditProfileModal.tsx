@@ -250,6 +250,13 @@ export default function EditProfileModal({ profile, onClose, onSaved }: Props) {
             </TwoCol>
           </FormSection>
 
+          <FormSection label="🎬 Cinematic Profile">
+            <Field label="Intro Video URL">
+              <input style={inp} placeholder="YouTube, Loom, or Vimeo link — plays as your hero background" value={form.intro_video_url} onChange={e => set('intro_video_url', e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
+              <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>Paste a YouTube, Loom, or Vimeo URL. It plays silently as the background of your public profile.</div>
+            </Field>
+          </FormSection>
+
           {error && (
             <div style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.25)', borderRadius: '10px', padding: '12px 16px', fontSize: '14px', color: '#ff7070' }}>
               {error}
