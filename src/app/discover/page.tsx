@@ -124,8 +124,8 @@ export default function DiscoverPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18 }}>
             {filtered.map(p => (
               <div key={p.id}
-                onClick={() => router.push(`/profile/${p.username}`)}
-                style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14, transition: 'border-color 0.2s, transform 0.15s' }}
+                onClick={() => p.username && router.push(`/profile/${p.username}`)}
+                style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22, cursor: p.username ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', gap: 14, transition: 'border-color 0.2s, transform 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = C.lime; e.currentTarget.style.transform = 'translateY(-3px)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)' }}>
 
@@ -167,7 +167,9 @@ export default function DiscoverPage() {
                   </div>
                 )}
 
-                <div style={{ marginTop: 'auto', fontSize: 12, color: C.lime, fontWeight: 600 }}>View profile →</div>
+                <div style={{ marginTop: 'auto', fontSize: 12, color: p.username ? C.lime : C.gray, fontWeight: 600 }}>
+                  {p.username ? 'View profile →' : 'No username set'}
+                </div>
               </div>
             ))}
           </div>
