@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { getClient } from '@/lib/supabase'
 import { Profile, Reel, IndividualProject } from '@/types'
@@ -28,7 +28,8 @@ function fullName(p: Profile) {
   return [(p.first_name || ''), (p.last_name || '')].join(' ').trim() || p.username || 'Anonymous'
 }
 
-export default function PublicProfilePage({ params }: { params: { username: string } }) {
+export default function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params)
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [reels, setReels] = useState<Reel[]>([])
@@ -39,7 +40,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
 
   useEffect(() => {
     async function load() {
-      const { data: prof } = await sb.from('profiles').select('*').eq('username', params.username).single()
+      const { data: prof } = await sb.from('profiles').select('*').eq('username', username).single()
       if (!prof) { setNotFound(true); setLoading(false); return }
       setProfile(prof)
       const [reelRes, projRes] = await Promise.all([
@@ -51,7 +52,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       setLoading(false)
     }
     load()
-  }, [params.username])
+  }, [username])
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: C.obsidian, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -67,7 +68,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     <div style={{ minHeight: '100vh', background: C.obsidian, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
       <div style={{ fontSize: 48 }}>🎬</div>
       <div style={{ fontSize: 22, fontFamily: 'monospace', fontWeight: 700, color: C.filmLight }}>Profile not found</div>
-      <div style={{ fontSize: 14, color: C.gray }}>@{params.username} doesn't exist.</div>
+      <div style={{ fontSize: 14, color: C.gray }}>@{username} doesn't exist.</div>
       <button onClick={() => router.push('/discover')} style={{ marginTop: 8, background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '10px 22px', fontWeight: 700, cursor: 'pointer' }}>← Back to Discover</button>
     </div>
   )
