@@ -46,7 +46,18 @@ export default function DiscoverPage() {
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
-    const { data } = await sb.from('profiles').select('*').neq('id', user.id).order('created_at', { ascending: false })
+
+    // Get all manager IDs so we can exclude them from the profiles list
+    const { data: managerRows } = await sb.from('managers').select('id')
+    const managerIds = (managerRows || []).map((m: any) => m.id)
+
+    // Fetch individual profiles, excluding the current user and all managers
+    let query = sb.from('profiles').select('*').neq('id', user.id)
+    if (managerIds.length > 0) {
+      query = query.not('id', 'in', `(${managerIds.join(',')})`)
+    }
+    const { data } = await query.order('created_at', { ascending: false })
+
     setProfiles(data || [])
     setLoading(false)
   }, [user])
