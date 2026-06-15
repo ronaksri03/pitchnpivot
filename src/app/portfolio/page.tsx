@@ -30,7 +30,7 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/auth')
-    if (!authLoading && accountType === 'manager') router.replace('/auth')
+    if (!authLoading && accountType === 'manager') router.replace('/lab')
     if (!authLoading && user && accountType === 'individual') load()
   }, [authLoading, user, accountType])
 
