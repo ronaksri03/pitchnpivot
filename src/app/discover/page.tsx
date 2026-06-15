@@ -27,7 +27,7 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/auth')
-    if (!authLoading && accountType === 'manager') router.replace('/auth')
+    if (!authLoading && accountType === 'manager') router.replace('/lab')
   }, [authLoading, user, accountType, router])
 
   const load = useCallback(async () => {
