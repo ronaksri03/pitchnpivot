@@ -32,6 +32,7 @@ export default function NavBar() {
       {/* Nav links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <NavLink href="/discover">Discover</NavLink>
+        <NavLink href="/jobs">Jobs</NavLink>
         <NavLink href="/lab">Project Lab</NavLink>
       </div>
 
