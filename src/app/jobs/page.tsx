@@ -126,12 +126,14 @@ export default function JobsPage() {
     if (!user) return
     setLoading(true)
     if (accountType === 'individual') {
-      const { data } = await sb.from('jobs').select('*, managers(name, company)').eq('status', 'open').gt('closes_at', new Date().toISOString()).order('created_at', { ascending: false })
+      const { data, error } = await sb.from('jobs').select('*, managers(name, company)').eq('status', 'open').gt('closes_at', new Date().toISOString()).order('created_at', { ascending: false })
+      if (error) console.error('Jobs query error:', error)
       const { data: apps } = await sb.from('job_applications').select('job_id').eq('individual_id', user.id)
       setJobs(data || [])
       setApplied(new Set((apps || []).map((a: any) => a.job_id)))
     } else {
-      const { data } = await sb.from('jobs').select('*, job_applications(count)').eq('manager_id', user.id).order('created_at', { ascending: false })
+      const { data, error } = await sb.from('jobs').select('*, job_applications(count)').eq('manager_id', user.id).order('created_at', { ascending: false })
+      if (error) console.error('Manager jobs query error:', error)
       setMyJobs((data || []).map((j: any) => ({ ...j, _application_count: j.job_applications?.[0]?.count || 0 })))
     }
     setLoading(false)
