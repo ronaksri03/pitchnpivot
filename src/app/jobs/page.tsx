@@ -153,8 +153,29 @@ export default function JobsPage() {
   async function loadApplicants(job: Job) {
     setSelectedJob(job)
     setLoadingApplicants(true)
-    const { data } = await sb.from('job_applications').select('*, profiles(first_name, last_name, job_title, username)').eq('job_id', job.id).order('submitted_at', { ascending: false })
-    setApplicants(data || [])
+
+    // Step 1: fetch applications
+    const { data: apps, error } = await sb
+      .from('job_applications')
+      .select('*')
+      .eq('job_id', job.id)
+      .order('submitted_at', { ascending: false })
+
+    if (error) { console.error('Applicants error:', error); setLoadingApplicants(false); return }
+
+    // Step 2: fetch profiles separately (FK points to auth.users not profiles)
+    if (apps && apps.length > 0) {
+      const ids = apps.map((a: any) => a.individual_id)
+      const { data: profiles } = await sb
+        .from('profiles')
+        .select('id, first_name, last_name, job_title, username')
+        .in('id', ids)
+      const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+      setApplicants(apps.map((a: any) => ({ ...a, profiles: profileMap[a.individual_id] || null })))
+    } else {
+      setApplicants([])
+    }
+
     setLoadingApplicants(false)
   }
 
