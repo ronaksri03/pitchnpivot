@@ -132,9 +132,27 @@ export default function JobsPage() {
       setJobs(data || [])
       setApplied(new Set((apps || []).map((a: any) => a.job_id)))
     } else {
-      const { data, error } = await sb.from('jobs').select('*, job_applications(count)').eq('manager_id', user.id).order('created_at', { ascending: false })
-      if (error) console.error('Manager jobs query error:', error)
-      setMyJobs((data || []).map((j: any) => ({ ...j, _application_count: j.job_applications?.[0]?.count || 0 })))
+      // Step 1: get the manager's jobs
+      const { data: jobData, error } = await sb
+        .from('jobs')
+        .select('*')
+        .eq('manager_id', user.id)
+        .order('created_at', { ascending: false })
+      if (error) console.error('Manager jobs error:', error)
+
+      // Step 2: count applications per job separately (RLS on join silently returns 0)
+      if (jobData && jobData.length > 0) {
+        const jobIds = jobData.map((j: any) => j.id)
+        const { data: appRows } = await sb
+          .from('job_applications')
+          .select('job_id')
+          .in('job_id', jobIds)
+        const countMap: Record<string, number> = {}
+        ;(appRows || []).forEach((a: any) => { countMap[a.job_id] = (countMap[a.job_id] || 0) + 1 })
+        setMyJobs(jobData.map((j: any) => ({ ...j, _application_count: countMap[j.id] || 0 })))
+      } else {
+        setMyJobs([])
+      }
     }
     setLoading(false)
   }, [user, accountType])
