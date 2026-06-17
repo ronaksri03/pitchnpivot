@@ -94,6 +94,7 @@ export default function JobsPage() {
   const [empFilter, setEmpFilter] = useState('all')
 
   // Individual state
+  const [myReels, setMyReels] = useState<{id: string, title: string | null, url: string, skills: string[]}[]>([])
   const [applied, setApplied] = useState<Set<string>>(new Set())
   const [applyJob, setApplyJob] = useState<Job | null>(null)
   const [coverNote, setCoverNote] = useState('')
@@ -203,10 +204,16 @@ export default function JobsPage() {
     setApplicants(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
   }
 
-  // Individual: open apply modal with their video pre-filled
+  // Individual: open apply modal — load their reels
   async function openApplyModal(job: Job) {
-    const { data } = await sb.from('profiles').select('intro_video_url').eq('id', user!.id).single()
-    setVideoUrl(data?.intro_video_url || '')
+    const { data: reelData } = await sb
+      .from('reels')
+      .select('id, title, url, skills')
+      .eq('user_id', user!.id)
+      .order('created_at', { ascending: false })
+    setMyReels(reelData || [])
+    // Pre-select first reel if available
+    setVideoUrl(reelData?.[0]?.url || '')
     setCoverNote('')
     setApplyError('')
     setApplyJob(job)
@@ -520,25 +527,56 @@ export default function JobsPage() {
               <button onClick={() => setApplyJob(null)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ padding: '24px 28px' }}>
-              {videoUrl && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, color: C.lime, fontFamily: 'monospace', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>🎬 Your Video CV (auto-attached)</div>
-                  <div style={{ position: 'relative', paddingBottom: '42%', borderRadius: 10, overflow: 'hidden', background: C.slate, border: `1px solid rgba(200,255,0,0.2)` }}>
-                    <iframe src={videoUrl.includes('youtube') ? videoUrl.replace('watch?v=', 'embed/') : videoUrl.replace('loom.com/share/', 'loom.com/embed/')} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }} allow="autoplay" allowFullScreen />
-                  </div>
-                  <div style={{ fontSize: 11, color: C.gray, marginTop: 6 }}>This is the intro video from your profile. You can replace the URL below.</div>
-                </div>
-              )}
-              {!videoUrl && (
-                <div style={{ marginBottom: 16, padding: '12px 14px', background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 8, fontSize: 13, color: '#ffd700' }}>
-                  ⚠️ No intro video on your profile yet. Add one in Edit Profile, or paste a link below.
-                </div>
-              )}
-              <form onSubmit={submitApplication} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <form onSubmit={submitApplication} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                {/* Reel selector */}
                 <div>
-                  <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Video CV URL (YouTube, Loom, or Vimeo)</label>
-                  <input style={inp} placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
+                  <div style={{ fontSize: 10, color: C.lime, fontFamily: 'monospace', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>🎬 Select a Reel to attach</div>
+                  {myReels.length === 0 ? (
+                    <div style={{ padding: '14px', background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 10, fontSize: 13, color: '#ffd700' }}>
+                      ⚠️ You have no reels on your profile. Go to /profile → Reels tab and add one first.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {myReels.map(r => {
+                        const selected = videoUrl === r.url
+                        return (
+                          <div key={r.id} onClick={() => setVideoUrl(r.url)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: selected ? 'rgba(200,255,0,0.08)' : C.obsidian, border: `1px solid ${selected ? C.lime : C.border}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
+                            {/* Radio */}
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${selected ? C.lime : C.charcoal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {selected && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.lime }} />}
+                            </div>
+                            {/* Play icon */}
+                            <div style={{ width: 32, height: 32, borderRadius: 8, background: selected ? 'rgba(200,255,0,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: selected ? C.lime : C.gray, flexShrink: 0 }}>▶</div>
+                            {/* Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: selected ? C.filmLight : '#bbb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {r.title || 'Untitled reel'}
+                              </div>
+                              {(r.skills || []).length > 0 && (
+                                <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{r.skills.slice(0, 3).join(' · ')}</div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
+
+                {/* Preview selected reel */}
+                {videoUrl && (
+                  <div>
+                    <div style={{ fontSize: 10, color: C.gray, fontFamily: 'monospace', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Preview</div>
+                    <div style={{ position: 'relative', paddingBottom: '40%', borderRadius: 10, overflow: 'hidden', background: C.slate }}>
+                      <iframe
+                        src={videoUrl.includes('youtube') ? videoUrl.replace('watch?v=', 'embed/') : videoUrl.replace('loom.com/share/', 'loom.com/embed/')}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allow="autoplay" allowFullScreen />
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Cover note (optional)</label>
                   <textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} placeholder={`Tell ${(applyJob as any).managers?.name || 'the manager'} why you are a great fit…`} value={coverNote} onChange={e => setCoverNote(e.target.value)} rows={4} />
