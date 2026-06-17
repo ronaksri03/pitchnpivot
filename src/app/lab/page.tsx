@@ -57,6 +57,8 @@ export default function LabPage() {
   const [submitVideo, setSubmitVideo]     = useState('')
   const [submitting, setSubmitting]       = useState(false)
   const [submitError, setSubmitError]     = useState('')
+  const [submitReelId, setSubmitReelId]   = useState<string|null>(null)
+  const [myReelsForSubmit, setMyReelsForSubmit] = useState<any[]>([])
 
   /* ── manager ── */
   const [mgrProjects, setMgrProjects]     = useState<ManagerProject[]>([])
@@ -64,6 +66,9 @@ export default function LabPage() {
   const [selectedProject, setSelectedProject] = useState<ManagerProject|null>(null)
   const [submissions, setSubmissions]     = useState<any[]>([])
   const [loadingSubs, setLoadingSubs]     = useState(false)
+  const [verifyingId, setVerifyingId]     = useState<string|null>(null)
+  const [verifyNote, setVerifyNote]       = useState('')
+  const [verifyingSub, setVerifyingSub]   = useState<any|null>(null)
   const [sortKey, setSortKey]             = useState<SortKey>('latest')
   const [statusFilter, setStatusFilter]   = useState<'all'|'pending'|'accepted'|'rejected'>('all')
 
@@ -173,13 +178,33 @@ export default function LabPage() {
     setSubmitting(true); setSubmitError('')
     const { error } = await sb.from('project_submissions').insert({
       project_id: submitProject.id, individual_id: user.id,
-      submission_url: submitUrl || null, note: submitNote || null, video_url: submitVideo || null,
+      submission_url: submitUrl || null, note: submitNote || null,
+      video_url: submitVideo || (myReelsForSubmit.find((r:any)=>r.id===submitReelId)?.url) || null,
+      reel_id: submitReelId || null,
     })
     if (error) { setSubmitError(error.code === '23505' ? 'Already submitted.' : error.message); setSubmitting(false); return }
     setAlreadySubmitted(prev => new Set([...prev, submitProject.id]))
     setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('')
     setSubmitting(false)
     loadData()
+  }
+
+  /* ── manager: verify a reel ── */
+  async function verifyReel(sub: any) {
+    if (!sub.reel_id) return
+    setVerifyingId(sub.id)
+    await sb.from('reels').update({
+      is_verified: true,
+      verified_by: user!.id,
+      verified_at: new Date().toISOString(),
+      verification_note: verifyNote || null,
+      verified_project_title: selectedProject?.title || null,
+    }).eq('id', sub.reel_id)
+    // refresh submissions to reflect verified state
+    setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, reel_verified: true } : s))
+    setVerifyingSub(null)
+    setVerifyNote('')
+    setVerifyingId(null)
   }
 
   /* ── sorted/filtered submissions ── */
@@ -630,10 +655,33 @@ export default function LabPage() {
               <button onClick={() => setSubmitProject(null)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <form onSubmit={submitWork} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Reel selector */}
+              {myReelsForSubmit.length > 0 && (
+                <div>
+                  <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 8 }}>Attach a Reel as your Video Walkthrough</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {myReelsForSubmit.map((r:any) => (
+                      <div key={r.id} onClick={() => setSubmitReelId(submitReelId===r.id ? null : r.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: submitReelId===r.id ? 'rgba(200,255,0,0.07)' : C.obsidian, border: `1px solid ${submitReelId===r.id ? C.lime : C.border}`, borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${submitReelId===r.id ? C.lime : C.charcoal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {submitReelId===r.id && <div style={{ width: 7, height: 7, borderRadius: '50%', background: C.lime }} />}
+                        </div>
+                        <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(200,255,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.lime, fontSize: 10, flexShrink: 0 }}>▶</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: submitReelId===r.id ? C.filmLight : '#bbb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title || 'Untitled reel'}</div>
+                          {r.skills?.length > 0 && <div style={{ fontSize: 11, color: C.gray }}>{r.skills.slice(0,3).join(' · ')}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {submitReelId && <div style={{ fontSize: 11, color: C.lime, marginTop: 6 }}>✓ Reel attached — manager can verify it after reviewing your work</div>}
+                </div>
+              )}
+
               {[
                 { label: 'Submission link', val: submitUrl, set: setSubmitUrl, ph: 'https://github.com/you/project' },
                 { label: 'Note to manager (optional)', val: submitNote, set: setSubmitNote, ph: 'Describe what you built…' },
-                { label: 'Video walkthrough (optional)', val: submitVideo, set: setSubmitVideo, ph: 'https://loom.com/share/...' },
+                { label: 'Video walkthrough URL (optional)', val: submitVideo, set: setSubmitVideo, ph: 'https://loom.com/share/...' },
               ].map(f => (
                 <div key={f.label}>
                   <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>{f.label}</label>
@@ -645,6 +693,36 @@ export default function LabPage() {
                 {submitting ? 'Submitting…' : 'Submit Work →'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── VERIFY REEL MODAL ── */}
+      {verifyingSub && (
+        <div onClick={e => e.target === e.currentTarget && setVerifyingSub(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 24 }}>
+          <div style={{ background: '#0f0f0f', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 18, padding: 28, width: '100%', maxWidth: 460 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#ffd700', fontFamily: 'monospace', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>✦ Verify Reel</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.filmLight }}>Confirm this work was completed</div>
+                <div style={{ fontSize: 12, color: C.gray, marginTop: 3 }}>Your verification is permanently attached to this reel as proof of work.</div>
+              </div>
+              <button onClick={() => setVerifyingSub(null)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', fontSize: 13 }}>✕</button>
+            </div>
+            <div style={{ background: 'rgba(255,200,0,0.05)', border: '1px solid rgba(255,200,0,0.15)', borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: 13, color: '#bbb', lineHeight: 1.6 }}>
+              By verifying, you confirm that <strong style={{ color: C.filmLight }}>{verifyingSub.profile ? `${verifyingSub.profile.first_name || ''} ${verifyingSub.profile.last_name || ''}`.trim() : 'this individual'}</strong> completed real work on <strong style={{ color: C.filmLight }}>{selectedProject?.title}</strong> and that the attached video accurately demonstrates their contribution.
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 6 }}>Note (optional) — shown publicly on their verified reel</label>
+              <textarea style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' } as React.CSSProperties}
+                rows={3} placeholder={`e.g. "${(verifyingSub.profile?.first_name || 'They')} delivered clean, well-documented code and explained their approach clearly."`}
+                value={verifyNote} onChange={e => setVerifyNote(e.target.value)} />
+            </div>
+            <button onClick={() => verifyReel(verifyingSub)} disabled={!!verifyingId}
+              style={{ width: '100%', padding: '12px', background: '#ffd700', color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+              {verifyingId ? 'Verifying…' : '✦ Verify & Attach to Reel'}
+            </button>
           </div>
         </div>
       )}
