@@ -75,6 +75,10 @@ export default function ProfilePage() {
 
   // ── Reel CRUD ──
   function openNewReel() {
+    if (reels.length >= 10) {
+      alert('You have reached the maximum of 10 reels. Delete one before adding a new one.')
+      return
+    }
     setEditReel(null)
     setReelUrl(''); setReelTitle(''); setReelSkills([]); setReelSkillInput(''); setReelVisibility('public'); setReelError('')
     setShowReelModal(true)
@@ -260,9 +264,14 @@ export default function ProfilePage() {
           {tab === 'reels' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Add Reel button */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={openNewReel} style={{ background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                  + Add Reel
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: reels.length >= 10 ? '#ff6b6b' : C.gray }}>
+                  {reels.length}/10 reels
+                </span>
+                <button onClick={openNewReel}
+                  disabled={reels.length >= 10}
+                  style={{ background: reels.length >= 10 ? C.charcoal : C.lime, color: reels.length >= 10 ? C.gray : C.obsidian, border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: reels.length >= 10 ? 'not-allowed' : 'pointer', opacity: reels.length >= 10 ? 0.6 : 1 }}>
+                  {reels.length >= 10 ? '✕ Max 10 reels reached' : '+ Add Reel'}
                 </button>
               </div>
 
