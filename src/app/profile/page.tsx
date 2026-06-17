@@ -300,8 +300,11 @@ export default function ProfilePage() {
                         )}
                       </div>
 
-                      {/* Visibility + actions */}
+                      {/* Verified badge + visibility + actions */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        {(r as any).is_verified && (
+                          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.4)', color: '#ffd700', letterSpacing: '0.05em' }}>✦ VERIFIED</span>
+                        )}
                         <span style={{ fontSize: 12, color: C.gray }}>{r.visibility === 'private' ? '🔒' : '🌐'}</span>
                         <button onClick={() => openEditReel(r)} style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: 14, padding: '2px 4px' }} title="Edit">✎</button>
                         <button onClick={() => deleteReel(r.id)} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: 13, padding: '2px 4px' }} title="Delete">✕</button>
