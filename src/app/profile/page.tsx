@@ -37,6 +37,17 @@ export default function ProfilePage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitDone, setSubmitDone] = useState<Set<string>>(new Set())
+
+  // Reel management
+  const [showReelModal, setShowReelModal] = useState(false)
+  const [editReel, setEditReel] = useState<Reel | null>(null)
+  const [reelUrl, setReelUrl] = useState('')
+  const [reelTitle, setReelTitle] = useState('')
+  const [reelSkillInput, setReelSkillInput] = useState('')
+  const [reelSkills, setReelSkills] = useState<string[]>([])
+  const [reelVisibility, setReelVisibility] = useState<'public' | 'private'>('public')
+  const [savingReel, setSavingReel] = useState(false)
+  const [reelError, setReelError] = useState('')
   const sb = getClient()
 
   useEffect(() => {
@@ -60,6 +71,51 @@ export default function ProfilePage() {
     const { data: visitsData } = await sb.from('profile_views').select('*, managers(name, company)').eq('profile_user_id', user.id).order('viewed_at', { ascending: false }).limit(20)
     setVisits(visitsData || [])
     setLoading(false)
+  }
+
+  // ── Reel CRUD ──
+  function openNewReel() {
+    setEditReel(null)
+    setReelUrl(''); setReelTitle(''); setReelSkills([]); setReelSkillInput(''); setReelVisibility('public'); setReelError('')
+    setShowReelModal(true)
+  }
+
+  function openEditReel(r: Reel) {
+    setEditReel(r)
+    setReelUrl(r.url); setReelTitle(r.title || ''); setReelSkills(r.skills || []); setReelSkillInput(''); setReelVisibility(r.visibility); setReelError('')
+    setShowReelModal(true)
+  }
+
+  async function saveReel(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || !reelUrl.trim()) return
+    setSavingReel(true); setReelError('')
+
+    // Auto-detect source from URL
+    let source = 'other'
+    if (reelUrl.includes('youtube') || reelUrl.includes('youtu.be')) source = 'youtube'
+    else if (reelUrl.includes('loom')) source = 'loom'
+    else if (reelUrl.includes('vimeo')) source = 'vimeo'
+
+    const payload = { url: reelUrl.trim(), title: reelTitle.trim() || null, source, skills: reelSkills, visibility: reelVisibility }
+
+    const { error } = editReel
+      ? await sb.from('reels').update(payload).eq('id', editReel.id)
+      : await sb.from('reels').insert({ ...payload, user_id: user.id })
+
+    if (error) { setReelError(error.message); setSavingReel(false); return }
+
+    // Refresh reels
+    const { data } = await sb.from('reels').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    setReels(data || [])
+    setShowReelModal(false)
+    setSavingReel(false)
+  }
+
+  async function deleteReel(id: string) {
+    if (!confirm('Delete this reel?')) return
+    await sb.from('reels').delete().eq('id', id)
+    setReels(prev => prev.filter(r => r.id !== id))
   }
 
   async function submitWork(e: React.FormEvent) {
@@ -201,22 +257,50 @@ export default function ProfilePage() {
           </div>
 
           {/* Reels */}
-          {tab === 'reels' && (reels.length === 0
-            ? <Empty icon="▶" text="No reels yet. Add your first reel to get discovered." />
-            : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {reels.map(r => (
-                <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 18px', cursor: 'pointer', transition: 'border-color 0.2s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = C.lime)} onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
-                    <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: C.lime, flexShrink: 0 }}>▶</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: C.filmLight, marginBottom: 5 }}>{r.title || 'Untitled reel'}</div>
-                      {r.skills?.length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{r.skills.slice(0, 4).map(s => <span key={s} style={{ fontSize: 11, padding: '1px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border}`, color: C.gray }}>{s}</span>)}</div>}
+          {tab === 'reels' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Add Reel button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={openNewReel} style={{ background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                  + Add Reel
+                </button>
+              </div>
+
+              {reels.length === 0
+                ? <Empty icon="▶" text="No reels yet. Add your first reel to get discovered." />
+                : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {reels.map(r => (
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 14, background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 18px', transition: 'border-color 0.2s' }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = C.lime)}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+
+                      {/* Play icon */}
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', flexShrink: 0 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: C.lime }}>▶</div>
+                      </a>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.filmLight, marginBottom: 4 }}>{r.title || 'Untitled reel'}</div>
+                        {(r.skills || []).length > 0 && (
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {r.skills.slice(0, 4).map(s => (
+                              <span key={s} style={{ fontSize: 11, padding: '1px 8px', borderRadius: 20, background: 'rgba(200,255,0,0.07)', border: '1px solid rgba(200,255,0,0.18)', color: C.lime }}>{s}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visibility + actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, color: C.gray }}>{r.visibility === 'private' ? '🔒' : '🌐'}</span>
+                        <button onClick={() => openEditReel(r)} style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: 14, padding: '2px 4px' }} title="Edit">✎</button>
+                        <button onClick={() => deleteReel(r.id)} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: 13, padding: '2px 4px' }} title="Delete">✕</button>
+                      </div>
                     </div>
-                    <span style={{ fontSize: 12, color: C.gray }}>{r.visibility === 'private' ? '🔒' : '🌐'}</span>
-                  </div>
-                </a>
-              ))}
+                  ))}
+                </div>
+              }
             </div>
           )}
 
@@ -277,6 +361,65 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* ── Reel Modal ── */}
+      {showReelModal && (
+        <div onClick={e => e.target === e.currentTarget && setShowReelModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 24 }}>
+          <div style={{ background: '#0f0f0f', border: `1px solid ${C.border}`, borderRadius: 18, padding: 28, width: '100%', maxWidth: 500 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.filmLight }}>{editReel ? 'Edit Reel' : 'Add New Reel'}</div>
+              <button onClick={() => setShowReelModal(false)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+            <form onSubmit={saveReel} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Video URL * (YouTube, Loom, or Vimeo)</label>
+                <input style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
+                  placeholder="https://youtube.com/watch?v=..." value={reelUrl} onChange={e => setReelUrl(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Title</label>
+                <input style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
+                  placeholder="e.g. Building a Real-Time Chat App" value={reelTitle} onChange={e => setReelTitle(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Skills shown in this reel</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ flex: 1, padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none' }}
+                    placeholder="Add skill, press Enter" value={reelSkillInput} onChange={e => setReelSkillInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (reelSkillInput.trim() && !reelSkills.includes(reelSkillInput.trim())) { setReelSkills(prev => [...prev, reelSkillInput.trim()]); setReelSkillInput('') } } }} />
+                  <button type="button" onClick={() => { if (reelSkillInput.trim() && !reelSkills.includes(reelSkillInput.trim())) { setReelSkills(prev => [...prev, reelSkillInput.trim()]); setReelSkillInput('') } }}
+                    style={{ padding: '8px 14px', background: C.slate, border: `1px solid ${C.border}`, color: C.filmLight, borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Add</button>
+                </div>
+                {reelSkills.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    {reelSkills.map(s => (
+                      <span key={s} onClick={() => setReelSkills(prev => prev.filter(x => x !== s))}
+                        style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime, cursor: 'pointer' }}>
+                        {s} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 8 }}>Visibility</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {(['public', 'private'] as const).map(v => (
+                    <button type="button" key={v} onClick={() => setReelVisibility(v)}
+                      style={{ flex: 1, padding: '9px', background: reelVisibility === v ? C.lime : 'transparent', color: reelVisibility === v ? C.obsidian : C.gray, border: `1px solid ${reelVisibility === v ? C.lime : C.border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      {v === 'public' ? '🌐 Public' : '🔒 Private'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {reelError && <div style={{ color: '#ff6b6b', fontSize: 12 }}>{reelError}</div>}
+              <button type="submit" disabled={savingReel} style={{ padding: '12px', background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>
+                {savingReel ? 'Saving…' : editReel ? 'Save Changes' : 'Add Reel'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showEdit && profile && <EditProfileModal profile={profile} onClose={() => setShowEdit(false)} onSaved={p => setProfile(p)} />}
 
