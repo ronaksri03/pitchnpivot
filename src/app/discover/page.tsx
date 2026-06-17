@@ -65,10 +65,14 @@ export default function DiscoverPage() {
     // Exclude current user and all managers
     const { data: managerRows } = await sb.from('managers').select('id')
     const managerIds = (managerRows || []).map((m: any) => m.id)
-    let query = sb.from('profiles').select('*').neq('id', user.id)
+    let query = sb.from('profiles').select('*, reels(id, is_verified)').neq('id', user.id)
     if (managerIds.length > 0) query = query.not('id', 'in', `(${managerIds.join(',')})`)
     const { data } = await query.order('created_at', { ascending: false })
-    setProfiles(data || [])
+    // Attach verified reel count to each profile
+    setProfiles((data || []).map((p: any) => ({
+      ...p,
+      _verified_count: (p.reels || []).filter((r: any) => r.is_verified).length,
+    })))
     setLoading(false)
   }, [user])
 
@@ -86,6 +90,8 @@ export default function DiscoverPage() {
       )
     }
     if (availFilter !== 'all') results = results.filter(p => p.availability === availFilter)
+    // Sort: verified reels first, then by created_at
+    results.sort((a: any, b: any) => (b._verified_count || 0) - (a._verified_count || 0))
     setFiltered(results)
   }, [profiles, search, availFilter])
 
