@@ -209,9 +209,15 @@ export default function LabPage() {
   async function verifyReel() {
     if (!verifyingSub || !selectedVerifyReel) return
     setVerifyingId(verifyingSub.id)
+
+    // Fetch manager's name + company to store with verification
+    const { data: mgrData } = await sb.from('managers').select('name, company').eq('id', user!.id).single()
+
     await sb.from('reels').update({
       is_verified: true,
       verified_by: user!.id,
+      verified_by_name: mgrData?.name || null,
+      verified_by_company: mgrData?.company || null,
       verified_at: new Date().toISOString(),
       verification_note: verifyNote || null,
       verified_project_title: selectedProject?.title || null,
