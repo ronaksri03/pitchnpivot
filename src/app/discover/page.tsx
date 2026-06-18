@@ -62,17 +62,41 @@ export default function DiscoverPage() {
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
-    // Exclude current user and all managers
+
+    // Step 1: get all manager IDs to exclude from profiles
     const { data: managerRows } = await sb.from('managers').select('id')
     const managerIds = (managerRows || []).map((m: any) => m.id)
-    let query = sb.from('profiles').select('*, reels(id, is_verified)').neq('id', user.id)
+
+    // Step 2: fetch profiles (no reels join — avoids RLS blocking the whole query)
+    let query = sb.from('profiles').select('*').neq('id', user.id)
     if (managerIds.length > 0) query = query.not('id', 'in', `(${managerIds.join(',')})`)
-    const { data } = await query.order('created_at', { ascending: false })
-    // Attach verified reel count to each profile
-    setProfiles((data || []).map((p: any) => ({
-      ...p,
-      _verified_count: (p.reels || []).filter((r: any) => r.is_verified).length,
-    })))
+    const { data: profileData, error } = await query.order('created_at', { ascending: false })
+    if (error) console.error('Profiles query error:', error)
+
+    const profiles = profileData || []
+
+    // Step 3: fetch verified reel counts separately to avoid RLS join issues
+    if (profiles.length > 0) {
+      const ids = profiles.map((p: any) => p.id)
+      const { data: reelData } = await sb
+        .from('reels')
+        .select('user_id, is_verified')
+        .in('user_id', ids)
+        .eq('visibility', 'public')
+
+      const verifiedMap: Record<string, number> = {}
+      ;(reelData || []).forEach((r: any) => {
+        if (r.is_verified) verifiedMap[r.user_id] = (verifiedMap[r.user_id] || 0) + 1
+      })
+
+      setProfiles(profiles.map((p: any) => ({
+        ...p,
+        _verified_count: verifiedMap[p.id] || 0,
+      })))
+    } else {
+      setProfiles([])
+    }
+
     setLoading(false)
   }, [user])
 
