@@ -477,6 +477,10 @@ export default function LabPage() {
                                 {s}
                               </button>
                             ))}
+                            <button onClick={() => openVerifyModal(sub)}
+                              style={{ fontSize: 11, padding: '4px 12px', borderRadius: 6, background: 'rgba(255,200,0,0.1)', border: '1px solid rgba(255,200,0,0.35)', color: '#ffd700', cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                              ✦ Verify Reel
+                            </button>
                           </div>
                         </div>
 
