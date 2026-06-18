@@ -69,6 +69,8 @@ export default function LabPage() {
   const [verifyingId, setVerifyingId]     = useState<string|null>(null)
   const [verifyNote, setVerifyNote]       = useState('')
   const [verifyingSub, setVerifyingSub]   = useState<any|null>(null)
+  const [verifyReels, setVerifyReels]     = useState<any[]>([])
+  const [selectedVerifyReel, setSelectedVerifyReel] = useState<string|null>(null)
   const [sortKey, setSortKey]             = useState<SortKey>('latest')
   const [statusFilter, setStatusFilter]   = useState<'all'|'pending'|'accepted'|'rejected'>('all')
 
@@ -190,20 +192,37 @@ export default function LabPage() {
   }
 
   /* ── manager: verify a reel ── */
-  async function verifyReel(sub: any) {
-    if (!sub.reel_id) return
-    setVerifyingId(sub.id)
+  async function openVerifyModal(sub: any) {
+    // Fetch the individual's public reels
+    const { data } = await sb.from('reels')
+      .select('id, title, url, skills, is_verified, visibility')
+      .eq('user_id', sub.individual_id)
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
+    setVerifyReels(data || [])
+    // Pre-select attached reel if any
+    setSelectedVerifyReel(sub.reel_id || (data?.[0]?.id ?? null))
+    setVerifyNote('')
+    setVerifyingSub(sub)
+  }
+
+  async function verifyReel() {
+    if (!verifyingSub || !selectedVerifyReel) return
+    setVerifyingId(verifyingSub.id)
     await sb.from('reels').update({
       is_verified: true,
       verified_by: user!.id,
       verified_at: new Date().toISOString(),
       verification_note: verifyNote || null,
       verified_project_title: selectedProject?.title || null,
-    }).eq('id', sub.reel_id)
-    // refresh submissions to reflect verified state
-    setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, reel_verified: true } : s))
+    }).eq('id', selectedVerifyReel)
+    setSubmissions(prev => prev.map(s =>
+      s.id === verifyingSub.id ? { ...s, reel_verified: true, reel_id: selectedVerifyReel } : s
+    ))
+    setVerifyReels(prev => prev.map(r => r.id === selectedVerifyReel ? { ...r, is_verified: true } : r))
     setVerifyingSub(null)
     setVerifyNote('')
+    setSelectedVerifyReel(null)
     setVerifyingId(null)
   }
 
@@ -700,27 +719,66 @@ export default function LabPage() {
       {/* ── VERIFY REEL MODAL ── */}
       {verifyingSub && (
         <div onClick={e => e.target === e.currentTarget && setVerifyingSub(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 24 }}>
-          <div style={{ background: '#0f0f0f', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 18, padding: 28, width: '100%', maxWidth: 460 }}>
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 24 }}>
+          <div style={{ background: '#0f0f0f', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 18, padding: 28, width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto' }}>
+
+            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#ffd700', fontFamily: 'monospace', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>✦ Verify Reel</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.filmLight }}>Confirm this work was completed</div>
-                <div style={{ fontSize: 12, color: C.gray, marginTop: 3 }}>Your verification is permanently attached to this reel as proof of work.</div>
+                <div style={{ fontSize: 11, color: '#ffd700', fontFamily: 'monospace', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>✦ Verify a Reel</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.filmLight }}>
+                  {verifyingSub.profile ? `${verifyingSub.profile.first_name || ''} ${verifyingSub.profile.last_name || ''}`.trim() : 'Individual'}
+                </div>
+                <div style={{ fontSize: 12, color: C.gray, marginTop: 2 }}>Select which reel to verify for <strong style={{ color: C.filmLight }}>{selectedProject?.title}</strong></div>
               </div>
-              <button onClick={() => setVerifyingSub(null)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', fontSize: 13 }}>✕</button>
+              <button onClick={() => setVerifyingSub(null)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>✕</button>
             </div>
-            <div style={{ background: 'rgba(255,200,0,0.05)', border: '1px solid rgba(255,200,0,0.15)', borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: 13, color: '#bbb', lineHeight: 1.6 }}>
-              By verifying, you confirm that <strong style={{ color: C.filmLight }}>{verifyingSub.profile ? `${verifyingSub.profile.first_name || ''} ${verifyingSub.profile.last_name || ''}`.trim() : 'this individual'}</strong> completed real work on <strong style={{ color: C.filmLight }}>{selectedProject?.title}</strong> and that the attached video accurately demonstrates their contribution.
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 6 }}>Note (optional) — shown publicly on their verified reel</label>
+
+            {/* Reel picker */}
+            {verifyReels.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', background: C.slate, border: `1px dashed ${C.border}`, borderRadius: 10, marginBottom: 16, color: C.gray, fontSize: 13 }}>
+                This individual has no public reels yet.
+              </div>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: C.gray, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Their Public Reels</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {verifyReels.map((r: any) => (
+                    <div key={r.id} onClick={() => !r.is_verified && setSelectedVerifyReel(r.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: selectedVerifyReel === r.id ? 'rgba(255,200,0,0.07)' : C.obsidian, border: `1px solid ${r.is_verified ? 'rgba(255,200,0,0.25)' : selectedVerifyReel === r.id ? 'rgba(255,200,0,0.5)' : C.border}`, borderRadius: 10, cursor: r.is_verified ? 'default' : 'pointer', transition: 'all 0.15s', opacity: r.is_verified ? 0.6 : 1 }}>
+                      {/* Radio */}
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${selectedVerifyReel === r.id ? '#ffd700' : C.charcoal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {selectedVerifyReel === r.id && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ffd700' }} />}
+                      </div>
+                      {/* Play */}
+                      <div style={{ width: 32, height: 32, borderRadius: 7, background: 'rgba(255,200,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffd700', fontSize: 10, flexShrink: 0 }}>▶</div>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.filmLight, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title || 'Untitled reel'}</div>
+                        {r.skills?.length > 0 && <div style={{ fontSize: 11, color: C.gray, marginTop: 1 }}>{r.skills.slice(0,3).join(' · ')}</div>}
+                      </div>
+                      {r.is_verified && <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,200,0,0.1)', border: '1px solid rgba(255,200,0,0.3)', color: '#ffd700', flexShrink: 0 }}>✦ VERIFIED</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Note */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 6 }}>Verification note (optional — shown publicly on their reel)</label>
               <textarea style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' } as React.CSSProperties}
-                rows={3} placeholder={`e.g. "${(verifyingSub.profile?.first_name || 'They')} delivered clean, well-documented code and explained their approach clearly."`}
+                rows={3} placeholder="e.g. Delivered clean, well-documented code and explained their approach clearly."
                 value={verifyNote} onChange={e => setVerifyNote(e.target.value)} />
             </div>
-            <button onClick={() => verifyReel(verifyingSub)} disabled={!!verifyingId}
-              style={{ width: '100%', padding: '12px', background: '#ffd700', color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+
+            {/* Confirm */}
+            <div style={{ background: 'rgba(255,200,0,0.04)', border: '1px solid rgba(255,200,0,0.12)', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12, color: '#bbb', lineHeight: 1.6 }}>
+              By verifying, you confirm this individual completed real work on <strong style={{ color: C.filmLight }}>{selectedProject?.title}</strong> and this reel accurately demonstrates their contribution. This is permanently recorded.
+            </div>
+
+            <button onClick={verifyReel} disabled={!!verifyingId || !selectedVerifyReel || verifyReels.find((r:any)=>r.id===selectedVerifyReel)?.is_verified}
+              style={{ width: '100%', padding: '13px', background: selectedVerifyReel ? '#ffd700' : C.charcoal, color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: selectedVerifyReel ? 'pointer' : 'not-allowed', opacity: selectedVerifyReel ? 1 : 0.5 }}>
               {verifyingId ? 'Verifying…' : '✦ Verify & Attach to Reel'}
             </button>
           </div>
