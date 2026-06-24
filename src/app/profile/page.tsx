@@ -31,6 +31,16 @@ export default function ProfilePage() {
   const [showEdit, setShowEdit] = useState(false)
   const [tab, setTab] = useState<Tab>('reels')
   const [submitProject, setSubmitProject] = useState<ManagerProject | null>(null)
+
+  // Project CRUD state
+  const [showProjForm, setShowProjForm]   = useState(false)
+  const [editProjId, setEditProjId]       = useState<string|null>(null)
+  const [projTitle, setProjTitle]         = useState('')
+  const [projDesc, setProjDesc]           = useState('')
+  const [projStatus, setProjStatus]       = useState<'completed'|'in-progress'|'idea'>('completed')
+  const [projDemoLink, setProjDemoLink]   = useState('')
+  const [projSkillInput, setProjSkillInput] = useState('')
+  const [projSkills, setProjSkills]       = useState<string[]>([])
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitNote, setSubmitNote] = useState('')
   const [submitVideo, setSubmitVideo] = useState('')
@@ -68,6 +78,10 @@ export default function ProfilePage() {
     setProjects(projRes.data || [])
     const { data: assignedData } = await sb.from('manager_projects').select('*, managers(name, company)').eq('assigned_to', user.id).order('created_at', { ascending: false })
     setAssigned(assignedData || [])
+
+    // Pre-populate submitDone from DB so already-submitted projects show correctly
+    const { data: doneData } = await sb.from('project_submissions').select('project_id').eq('individual_id', user.id)
+    setSubmitDone(new Set((doneData || []).map((s: any) => s.project_id)))
     const { data: visitsData } = await sb.from('profile_views').select('*, managers(name, company)').eq('profile_user_id', user.id).order('viewed_at', { ascending: false }).limit(20)
     setVisits(visitsData || [])
     setLoading(false)
@@ -120,6 +134,35 @@ export default function ProfilePage() {
     if (!confirm('Delete this reel?')) return
     await sb.from('reels').delete().eq('id', id)
     setReels(prev => prev.filter(r => r.id !== id))
+  }
+
+  // ── Project CRUD ──
+  function openNewProject() {
+    setEditProjId(null); setProjTitle(''); setProjDesc(''); setProjStatus('completed'); setProjSkills([]); setProjDemoLink(''); setProjSkillInput('')
+    setShowProjForm(true)
+  }
+
+  function openEditProject(p: IndividualProject) {
+    setEditProjId(p.id); setProjTitle(p.title); setProjDesc(p.description || ''); setProjStatus((p.status as any) || 'completed'); setProjSkills(p.skills || []); setProjDemoLink(p.demo_link || ''); setProjSkillInput('')
+    setShowProjForm(true)
+  }
+
+  async function saveProject(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || !projTitle.trim()) return
+    const payload = { title: projTitle.trim(), description: projDesc || null, status: projStatus, skills: projSkills, demo_link: projDemoLink || null, visibility: 'public' as const }
+    const { data, error } = editProjId
+      ? await sb.from('individual_projects').update(payload).eq('id', editProjId).select().single()
+      : await sb.from('individual_projects').insert({ ...payload, user_id: user.id }).select().single()
+    if (error || !data) return
+    setProjects(prev => editProjId ? prev.map(p => p.id === editProjId ? data : p) : [data, ...prev])
+    setShowProjForm(false)
+  }
+
+  async function deleteProject(id: string) {
+    if (!confirm('Delete this project?')) return
+    await sb.from('individual_projects').delete().eq('id', id)
+    setProjects(prev => prev.filter(p => p.id !== id))
   }
 
   async function submitWork(e: React.FormEvent) {
@@ -317,22 +360,40 @@ export default function ProfilePage() {
           )}
 
           {/* Projects */}
-          {tab === 'projects' && (projects.length === 0
-            ? <Empty icon="🗂" text="No projects yet. Showcase your work to stand out." />
-            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
-              {projects.map(p => (
-                <div key={p.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, transition: 'border-color 0.2s, transform 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.lime; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.filmLight, lineHeight: 1.35 }}>{p.title}</div>
-                    {p.status && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.05em', background: p.status === 'completed' ? 'rgba(200,255,0,0.1)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.1)' : 'rgba(255,255,255,0.06)', border: `1px solid ${p.status === 'completed' ? 'rgba(200,255,0,0.3)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.25)' : C.border}`, color: p.status === 'completed' ? C.lime : p.status === 'in-progress' ? '#7090ff' : C.gray }}>{p.status}</span>}
-                  </div>
-                  {p.description && <p style={{ margin: 0, fontSize: 12, color: C.gray, lineHeight: 1.6 }}>{p.description.slice(0, 100)}{p.description.length > 100 ? '…' : ''}</p>}
-                  {p.skills?.length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 'auto' }}>{p.skills.slice(0, 3).map(s => <span key={s} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.charcoal}`, color: C.gray }}>{s}</span>)}</div>}
-                  {p.demo_link && <a href={p.demo_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.lime, textDecoration: 'none', fontWeight: 600 }} onClick={e => e.stopPropagation()}>🔗 View demo →</a>}
+          {tab === 'projects' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={openNewProject} style={{ background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Project</button>
+              </div>
+              {projects.length === 0
+                ? <Empty icon="🗂" text="No projects yet. Showcase your work to stand out." />
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+                  {projects.map(p => (
+                    <div key={p.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                      {/* Title + actions */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.filmLight, lineHeight: 1.35, flex: 1 }}>{p.title}</div>
+                        <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                          <button onClick={() => openEditProject(p)} style={{ fontSize: 11, padding: '2px 9px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime, borderRadius: 5, cursor: 'pointer', fontWeight: 700 }}>Edit</button>
+                          <button onClick={() => deleteProject(p.id)} style={{ fontSize: 11, padding: '2px 9px', background: 'rgba(255,107,107,0.06)', border: '1px solid rgba(255,107,107,0.2)', color: '#ff6b6b', borderRadius: 5, cursor: 'pointer', fontWeight: 700 }}>Delete</button>
+                        </div>
+                      </div>
+
+                      {/* Status badge */}
+                      {p.status && (
+                        <span style={{ alignSelf: 'flex-start', fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: p.status === 'completed' ? 'rgba(200,255,0,0.1)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.1)' : 'rgba(255,215,0,0.1)', border: `1px solid ${p.status === 'completed' ? 'rgba(200,255,0,0.3)' : p.status === 'in-progress' ? 'rgba(100,150,255,0.25)' : 'rgba(255,215,0,0.3)'}`, color: p.status === 'completed' ? C.lime : p.status === 'in-progress' ? '#7090ff' : '#ffd700' }}>
+                          {p.status === 'completed' ? '✓ Completed' : p.status === 'in-progress' ? '⚡ In Progress' : '💡 Idea'}
+                        </span>
+                      )}
+
+                      {p.description && <p style={{ margin: 0, fontSize: 12, color: C.gray, lineHeight: 1.6 }}>{p.description.slice(0, 100)}{p.description.length > 100 ? '…' : ''}</p>}
+                      {p.skills?.length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{p.skills.slice(0, 3).map(s => <span key={s} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.charcoal}`, color: C.gray }}>{s}</span>)}</div>}
+                      {p.demo_link && <a href={p.demo_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.lime, textDecoration: 'none', fontWeight: 600 }}>🔗 View demo →</a>}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              }
             </div>
           )}
 
@@ -373,6 +434,53 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* ── Project Form Modal ── */}
+      {showProjForm && (
+        <div onClick={e => e.target === e.currentTarget && setShowProjForm(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 24 }}>
+          <div style={{ background: '#0f0f0f', border: `1px solid ${C.border}`, borderRadius: 18, padding: 28, width: '100%', maxWidth: 500 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.filmLight }}>{editProjId ? 'Edit Project' : 'Add Project'}</div>
+              <button onClick={() => setShowProjForm(false)} style={{ background: C.slate, border: `1px solid ${C.border}`, color: C.gray, borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+            <form onSubmit={saveProject} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Title *</label>
+                <input style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }} value={projTitle} onChange={e => setProjTitle(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Description</label>
+                <textarea style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' } as React.CSSProperties} rows={3} value={projDesc} onChange={e => setProjDesc(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 8 }}>Status</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([{ value: 'completed', label: '✓ Completed', color: C.lime }, { value: 'in-progress', label: '⚡ In Progress', color: '#7090ff' }, { value: 'idea', label: '💡 Idea', color: '#ffd700' }] as const).map(opt => (
+                    <button type="button" key={opt.value} onClick={() => setProjStatus(opt.value)}
+                      style={{ flex: 1, padding: '8px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: `1px solid ${projStatus === opt.value ? opt.color : C.border}`, background: projStatus === opt.value ? `${opt.color}18` : 'transparent', color: projStatus === opt.value ? opt.color : C.gray }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Demo Link</label>
+                <input style={{ width: '100%', padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }} placeholder="https://..." value={projDemoLink} onChange={e => setProjDemoLink(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Skills</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ flex: 1, padding: '10px 13px', background: C.slate, border: `1px solid ${C.border}`, borderRadius: 8, color: C.filmLight, fontSize: 13, outline: 'none' }} placeholder="Add skill, press Enter" value={projSkillInput} onChange={e => setProjSkillInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (projSkillInput.trim() && !projSkills.includes(projSkillInput.trim())) { setProjSkills(p => [...p, projSkillInput.trim()]); setProjSkillInput('') } } }} />
+                  <button type="button" onClick={() => { if (projSkillInput.trim()) { setProjSkills(p => [...p, projSkillInput.trim()]); setProjSkillInput('') } }} style={{ padding: '8px 14px', background: C.slate, border: `1px solid ${C.border}`, color: C.filmLight, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Add</button>
+                </div>
+                {projSkills.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>{projSkills.map(s => <span key={s} onClick={() => setProjSkills(p => p.filter(x => x !== s))} style={{ fontSize: 11, padding: '2px 9px', borderRadius: 20, background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime, cursor: 'pointer' }}>{s} ✕</span>)}</div>}
+              </div>
+              <button type="submit" style={{ padding: '11px', background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>{editProjId ? 'Save Changes' : 'Add Project'}</button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Reel Modal ── */}
       {showReelModal && (
