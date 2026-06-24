@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitDone, setSubmitDone] = useState<Set<string>>(new Set())
+  const [submissionStatuses, setSubmissionStatuses] = useState<Record<string, string>>({})
 
   // Reel management
   const [showReelModal, setShowReelModal] = useState(false)
@@ -79,9 +80,15 @@ export default function ProfilePage() {
     const { data: assignedData } = await sb.from('manager_projects').select('*, managers(name, company)').eq('assigned_to', user.id).order('created_at', { ascending: false })
     setAssigned(assignedData || [])
 
-    // Pre-populate submitDone from DB so already-submitted projects show correctly
-    const { data: doneData } = await sb.from('project_submissions').select('project_id').eq('individual_id', user.id)
+    // Load all submissions by this individual — both for submitDone and submission statuses
+    const { data: doneData } = await sb
+      .from('project_submissions')
+      .select('project_id, status')
+      .eq('individual_id', user.id)
     setSubmitDone(new Set((doneData || []).map((s: any) => s.project_id)))
+    const statusMap: Record<string, string> = {}
+    ;(doneData || []).forEach((s: any) => { statusMap[s.project_id] = s.status })
+    setSubmissionStatuses(statusMap)
     const { data: visitsData } = await sb.from('profile_views').select('*, managers(name, company)').eq('profile_user_id', user.id).order('viewed_at', { ascending: false }).limit(20)
     setVisits(visitsData || [])
     setLoading(false)
@@ -171,7 +178,11 @@ export default function ProfilePage() {
     setSubmitting(true); setSubmitError('')
     const { error } = await sb.from('project_submissions').insert({ project_id: submitProject.id, individual_id: user.id, submission_url: submitUrl || null, note: submitNote || null, video_url: submitVideo || null })
     if (error) { setSubmitError(error.code === '23505' ? 'Already submitted.' : error.message) }
-    else { setSubmitDone(prev => new Set(prev).add(submitProject.id)); setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('') }
+    else {
+      setSubmitDone(prev => new Set(prev).add(submitProject.id))
+      setSubmissionStatuses(prev => ({ ...prev, [submitProject.id]: 'pending' }))
+      setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('')
+    }
     setSubmitting(false)
   }
 
@@ -400,19 +411,69 @@ export default function ProfilePage() {
           {/* Assigned */}
           {tab === 'assigned' && (assigned.length === 0
             ? <Empty icon="📋" text="No projects assigned to you yet." />
-            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
-              {assigned.map(p => (
-                <div key={p.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.filmLight }}>{p.title}</div>
-                    {submitDone.has(p.id)
-                      ? <span style={{ fontSize: 11, color: C.lime, fontWeight: 700 }}>✓ Submitted</span>
-                      : <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitError('') }} style={{ fontSize: 12, padding: '4px 12px', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: C.lime, borderRadius: 6, cursor: 'pointer', fontWeight: 600, flexShrink: 0 }}>Submit →</button>}
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {assigned.map(p => {
+                const submitted = submitDone.has(p.id)
+                const subStatus = submissionStatuses[p.id] || 'pending'
+                const subStatusStyle: Record<string, { bg: string; color: string; label: string }> = {
+                  pending:   { bg: 'rgba(255,200,0,0.1)',   color: '#ffc800', label: '⏳ Awaiting Review'  },
+                  reviewing: { bg: 'rgba(112,144,255,0.1)', color: '#7090ff', label: '🔍 Under Review'     },
+                  accepted:  { bg: 'rgba(200,255,0,0.1)',   color: C.lime,    label: '✓ Accepted'          },
+                  rejected:  { bg: 'rgba(255,107,107,0.1)', color: '#ff6b6b', label: '✕ Not Accepted'      },
+                }
+                const sStyle = subStatusStyle[subStatus] || subStatusStyle.pending
+                return (
+                  <div key={p.id} style={{ background: C.slate, border: `1px solid ${submitted ? 'rgba(200,255,0,0.15)' : C.border}`, borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                    {/* Header: title + submit button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: C.filmLight, marginBottom: 3 }}>{p.title}</div>
+                        {(p as any).managers?.name && (
+                          <div style={{ fontSize: 12, color: C.gray }}>
+                            {(p as any).managers.name}{(p as any).managers.company && ` · ${(p as any).managers.company}`}
+                          </div>
+                        )}
+                      </div>
+                      {!submitted && (
+                        <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitError('') }}
+                          style={{ fontSize: 12, padding: '6px 14px', background: C.lime, border: 'none', color: C.obsidian, borderRadius: 7, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>
+                          Submit Work →
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Two status rows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, background: C.obsidian, borderRadius: 9, padding: '12px 14px' }}>
+
+                      {/* Row 1: Project status (manager's) */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Project</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: p.status === 'open' ? 'rgba(200,255,0,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${p.status === 'open' ? 'rgba(200,255,0,0.3)' : C.border}`, color: p.status === 'open' ? C.lime : C.gray }}>
+                          {p.status === 'open' ? 'Open' : 'Closed'}
+                        </span>
+                      </div>
+
+                      {/* Row 2: Submission status */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Your Submission</span>
+                        {submitted
+                          ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: sStyle.bg, border: `1px solid ${sStyle.color}40`, color: sStyle.color }}>{sStyle.label}</span>
+                          : <span style={{ fontSize: 11, color: C.gray, fontStyle: 'italic' }}>Not submitted yet</span>
+                        }
+                      </div>
+                    </div>
+
+                    {/* Pay type + description */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {p.pay_type && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20, textTransform: 'uppercase', background: 'rgba(200,255,0,0.08)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime }}>{p.pay_type}</span>}
+                      {p.timeline && <span style={{ fontSize: 11, color: C.gray }}>⏱ {p.timeline}</span>}
+                    </div>
+
+                    {p.description && <p style={{ margin: 0, fontSize: 12, color: C.gray, lineHeight: 1.6 }}>{p.description.slice(0, 120)}{p.description.length > 120 ? '…' : ''}</p>}
                   </div>
-                  {(p as any).managers?.name && <div style={{ fontSize: 12, color: C.gray }}>{(p as any).managers.name}{(p as any).managers.company && ` · ${(p as any).managers.company}`}</div>}
-                  <span style={{ alignSelf: 'flex-start', fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.25)', color: C.lime }}>{p.pay_type || 'tbd'}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
