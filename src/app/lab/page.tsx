@@ -605,6 +605,17 @@ export default function LabPage() {
                       <button onClick={() => { setShowIndForm(true); setEditIndId(p.id); setIndTitle(p.title); setIndDesc(p.description || ''); setIndStatus(p.status || 'completed'); setIndSkills(p.skills || []); setIndDemoLink(p.demo_link || '') }}
                         style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✎</button>
                     </div>
+                    {p.status && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20, display: 'inline-block', marginBottom: 4,
+                        background: p.status === 'completed' ? 'rgba(200,255,0,0.1)' : p.status === 'in-progress' ? 'rgba(112,144,255,0.1)' : 'rgba(255,215,0,0.1)',
+                        border: `1px solid ${p.status === 'completed' ? 'rgba(200,255,0,0.3)' : p.status === 'in-progress' ? 'rgba(112,144,255,0.3)' : 'rgba(255,215,0,0.3)'}`,
+                        color: p.status === 'completed' ? C.lime : p.status === 'in-progress' ? '#7090ff' : '#ffd700',
+                        textTransform: 'capitalize',
+                      }}>
+                        {p.status === 'completed' ? '✓ Completed' : p.status === 'in-progress' ? '⚡ In Progress' : '💡 Idea'}
+                      </span>
+                    )}
                     {p.description && <p style={{ margin: 0, fontSize: 12, color: C.gray, lineHeight: 1.6 }}>{p.description.slice(0, 80)}{p.description.length > 80 ? '…' : ''}</p>}
                     {(p.skills || []).length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
@@ -657,6 +668,23 @@ export default function LabPage() {
             <form onSubmit={saveIndProject} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div><label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Title *</label><input style={inp} value={indTitle} onChange={e => setIndTitle(e.target.value)} required /></div>
               <div><label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Description</label><textarea style={{ ...inp, resize: 'vertical' } as React.CSSProperties} rows={3} value={indDesc} onChange={e => setIndDesc(e.target.value)} /></div>
+
+              <div>
+                <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 8 }}>Status</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([
+                    { value: 'completed',   label: '✓ Completed',   color: C.lime       },
+                    { value: 'in-progress', label: '⚡ In Progress', color: '#7090ff'    },
+                    { value: 'idea',        label: '💡 Idea',        color: '#ffd700'    },
+                  ] as const).map(opt => (
+                    <button type="button" key={opt.value} onClick={() => setIndStatus(opt.value)}
+                      style={{ flex: 1, padding: '8px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer', borderRadius: 8, border: `1px solid ${indStatus === opt.value ? opt.color : C.border}`, background: indStatus === opt.value ? `${opt.color}18` : 'transparent', color: indStatus === opt.value ? opt.color : C.gray, transition: 'all 0.15s' }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div><label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Demo Link</label><input style={inp} placeholder="https://..." value={indDemoLink} onChange={e => setIndDemoLink(e.target.value)} /></div>
               <div>
                 <label style={{ fontSize: 11, color: C.gray, fontWeight: 600, display: 'block', marginBottom: 5 }}>Skills</label>
