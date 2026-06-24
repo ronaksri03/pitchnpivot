@@ -588,7 +588,7 @@ export default function LabPage() {
         {indTab === 'mine' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => { setShowIndForm(true); setEditIndId(null); setIndTitle(''); setIndDesc(''); setIndSkills([]); setIndDemoLink('') }}
+              <button onClick={() => { setShowIndForm(true); setEditIndId(null); setIndTitle(''); setIndDesc(''); setIndStatus('completed'); setIndSkills([]); setIndDemoLink('') }}
                 style={{ background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Project</button>
             </div>
             {myProjects.length === 0 ? (
@@ -601,9 +601,17 @@ export default function LabPage() {
                 {myProjects.map(p => (
                   <div key={p.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{p.title}</div>
-                      <button onClick={() => { setShowIndForm(true); setEditIndId(p.id); setIndTitle(p.title); setIndDesc(p.description || ''); setIndStatus(p.status || 'completed'); setIndSkills(p.skills || []); setIndDemoLink(p.demo_link || '') }}
-                        style={{ background: 'none', border: 'none', color: C.gray, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✎</button>
+                      <div style={{ fontSize: 14, fontWeight: 700, flex: 1 }}>{p.title}</div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => { setShowIndForm(true); setEditIndId(p.id); setIndTitle(p.title); setIndDesc(p.description || ''); setIndStatus((p.status as any) || 'completed'); setIndSkills(p.skills || []); setIndDemoLink(p.demo_link || '') }}
+                          style={{ background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.2)', color: C.lime, cursor: 'pointer', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '3px 10px' }}>
+                          Edit
+                        </button>
+                        <button onClick={async () => { if (confirm('Delete this project?')) { await sb.from('individual_projects').delete().eq('id', p.id); setMyProjects(prev => prev.filter(x => x.id !== p.id)) } }}
+                          style={{ background: 'rgba(255,107,107,0.06)', border: '1px solid rgba(255,107,107,0.2)', color: '#ff6b6b', cursor: 'pointer', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '3px 10px' }}>
+                          Delete
+                        </button>
+                      </div>
                     </div>
                     {p.status && (
                       <span style={{
