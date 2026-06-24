@@ -39,6 +39,7 @@ export default function LabPage() {
   const [mySubmissions, setMySubmissions]   = useState<ProjectSubmission[]>([])
   const [indTab, setIndTab]                 = useState<'browse'|'mine'|'submitted'>('browse')
   const [alreadySubmitted, setAlreadySubmitted] = useState<Set<string>>(new Set())
+  const [submissionStatuses, setSubmissionStatuses] = useState<Record<string, string>>({})
 
   // individual project form
   const [showIndForm, setShowIndForm]   = useState(false)
@@ -102,11 +103,15 @@ export default function LabPage() {
       setOpenProjects((open || []) as ManagerProject[])
       const [mineRes, subRes] = await Promise.all([
         sb.from('individual_projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        sb.from('project_submissions').select('*, manager_projects(title, pay_type)').eq('individual_id', user.id).order('submitted_at', { ascending: false }),
+        sb.from('project_submissions').select('*, manager_projects(title, pay_type, status)').eq('individual_id', user.id).order('submitted_at', { ascending: false }),
       ])
       setMyProjects((mineRes.data || []) as IndividualProject[])
       setMySubmissions((subRes.data || []) as ProjectSubmission[])
       setAlreadySubmitted(new Set((subRes.data || []).map((s: any) => s.project_id)))
+      // Build map: project_id -> submission status
+      const statusMap: Record<string, string> = {}
+      ;(subRes.data || []).forEach((s: any) => { statusMap[s.project_id] = s.status })
+      setSubmissionStatuses(statusMap)
     }
     setLoading(false)
   }, [user, accountType])
@@ -186,6 +191,7 @@ export default function LabPage() {
     })
     if (error) { setSubmitError(error.code === '23505' ? 'Already submitted.' : error.message); setSubmitting(false); return }
     setAlreadySubmitted(prev => new Set([...prev, submitProject.id]))
+    setSubmissionStatuses(prev => ({ ...prev, [submitProject.id]: 'pending' }))
     setSubmitProject(null); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo('')
     setSubmitting(false)
     loadData()
@@ -573,10 +579,36 @@ export default function LabPage() {
                         {p.skills_required.slice(0, 4).map(s => <span key={s} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.18)', color: C.lime }}>{s}</span>)}
                       </div>
                     )}
-                    <button onClick={() => { if (!done) { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo(''); setSubmitError('') } }} disabled={done}
-                      style={{ marginTop: 'auto', padding: '10px', background: done ? 'rgba(200,255,0,0.08)' : C.lime, color: done ? C.lime : C.obsidian, border: done ? '1px solid rgba(200,255,0,0.25)' : 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: done ? 'default' : 'pointer' }}>
-                      {done ? '✓ Submitted' : 'Submit Work →'}
-                    </button>
+                    {done ? (
+                      /* Dual status panel */
+                      <div style={{ background: C.obsidian, borderRadius: 9, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7, marginTop: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Project</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, textTransform: 'uppercase', background: p.status === 'open' ? 'rgba(200,255,0,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${p.status === 'open' ? 'rgba(200,255,0,0.3)' : C.border}`, color: p.status === 'open' ? C.lime : C.gray }}>
+                            {p.status === 'open' ? 'Open' : 'Closed'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Your Submission</span>
+                          {(() => {
+                            const s = submissionStatuses[p.id] || 'pending'
+                            const styles: Record<string, {bg:string;color:string;label:string}> = {
+                              pending:   { bg: 'rgba(255,200,0,0.1)',   color: '#ffc800', label: '⏳ Awaiting Review' },
+                              reviewing: { bg: 'rgba(112,144,255,0.1)', color: '#7090ff', label: '🔍 Under Review'    },
+                              accepted:  { bg: 'rgba(200,255,0,0.1)',   color: C.lime,    label: '✓ Accepted'         },
+                              rejected:  { bg: 'rgba(255,107,107,0.1)', color: '#ff6b6b', label: '✕ Not Accepted'     },
+                            }
+                            const ss = styles[s] || styles.pending
+                            return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: ss.bg, border: `1px solid ${ss.color}40`, color: ss.color }}>{ss.label}</span>
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => { setSubmitProject(p); setSubmitUrl(''); setSubmitNote(''); setSubmitVideo(''); setSubmitError('') }}
+                        style={{ marginTop: 'auto', padding: '10px', background: C.lime, color: C.obsidian, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                        Submit Work →
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -649,14 +681,32 @@ export default function LabPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {mySubmissions.map(s => {
                 const proj = (s as any).manager_projects
-                const st = STATUS_STYLE[s.status] || STATUS_STYLE.pending
+                const subSt = STATUS_STYLE[s.status] || STATUS_STYLE.pending
+                const projStatus = proj?.status || 'open'
                 return (
-                  <div key={s.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{proj?.title || 'Project'}</div>
-                      <div style={{ fontSize: 12, color: C.gray }}>{new Date(s.submitted_at).toLocaleDateString()}</div>
+                  <div key={s.id} style={{ background: C.slate, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Title + date */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{proj?.title || 'Project'}</div>
+                        <div style={{ fontSize: 11, color: C.gray }}>Submitted {new Date(s.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                      </div>
+                      {proj?.pay_type && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20, flexShrink: 0, background: `${PAY_COLORS[proj.pay_type]}15`, border: `1px solid ${PAY_COLORS[proj.pay_type]}40`, color: PAY_COLORS[proj.pay_type] }}>{PAY_LABELS[proj.pay_type]}</span>}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: st.bg, color: st.color, border: `1px solid ${st.color}40` }}>{st.label}</span>
+
+                    {/* Dual status panel */}
+                    <div style={{ background: C.obsidian, borderRadius: 9, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Project Status</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, textTransform: 'uppercase', background: projStatus === 'open' ? 'rgba(200,255,0,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${projStatus === 'open' ? 'rgba(200,255,0,0.3)' : C.border}`, color: projStatus === 'open' ? C.lime : C.gray }}>
+                          {projStatus === 'open' ? 'Open' : 'Closed'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: C.gray, fontWeight: 600 }}>Submission Status</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: subSt.bg, border: `1px solid ${subSt.color}40`, color: subSt.color }}>{subSt.label}</span>
+                      </div>
+                    </div>
                   </div>
                 )
               })}
